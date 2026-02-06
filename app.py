@@ -170,7 +170,7 @@ def discard_game():
     return jsonify({"success":True,"message":"Đã hủy và không lưu game!"})
 
 @app.route("/api/undo",methods=["POST"])
-def undo():
+def undo():#Xử lý undo
     username=session.get("username")
     if not username:
         return jsonify({"success":False,"message":"Chưa đăng nhập!"})
@@ -181,6 +181,7 @@ def undo():
     result=game.undo()
     
     file_handler.save_game_state(username,game.get_state())
+    #Trả về kết quả cho backend
     return jsonify({"success":result.get("success",False),"message":result.get("message",""),"attempts":result.get("attempts",0),
                     
                     "guesses":result.get("guesses",[]),
@@ -190,7 +191,7 @@ def undo():
     })
 
 @app.route("/api/redo",methods=["POST"])
-def redo():
+def redo():# Xử lý redo
     username=session.get("username")
     if not username:
         return jsonify({"success":False,"message":"Chưa đăng nhập!"})
@@ -199,6 +200,7 @@ def redo():
         return jsonify({"success":False,"message":"Không có game nào đang chơi!"})
     result=game.redo()
     file_handler.save_game_state(username,game.get_state())
+    #Trả về kết quả cho backend
     return jsonify({"success":result.get("success",False),"message":result.get("message",""),
                     "attempts":result.get("attempts",0),
                     "guesses":result.get("guesses",[]),
@@ -211,14 +213,13 @@ def redo():
 
 @app.route("/api/resume_game",methods=["POST"])
 
-def resume_game():
+def resume_game():#Xử lý khi bấm vào resumeGame
     username=session.get("username")
     if not username:
         return jsonify({"success":False,"message":"Chưa đăng nhập!"})
     state=file_handler.load_game_state(username)
     if not state:
         return jsonify({"success":False,"message":"Không có game nào được lưu!"})
-    
     game=WordleGame.from_state(state)
     active_games[username]=game
     
@@ -255,7 +256,7 @@ def quit_game():
     return jsonify({"success":True,"message":"Đã thoát game!"})
 
 @app.route("/api/update_settings",methods=["POST"])
-def update_settings():
+def update_settings():#setting để chọn chế độ chơi 
     global game_settings
     data=request.json
     game_settings.update(data)
@@ -264,23 +265,20 @@ def update_settings():
 @app.route("/api/get_settings",methods=["GET"])
 def get_settings():
     return jsonify(game_settings)
-
 @app.route("/api/leaderboard",methods=["GET"])
-def get_leaderboard():
+def get_leaderboard():#Lấy top_20
     top_players=user_manager.get_top20()
     if not top_players:
         top_players=[]
     return jsonify({"success":True,"leaderboard":top_players})
 @app.route("/api/history",methods=["GET"])
-def get_history():
+def get_history():#Lấy lịch sử chơi
     username=session.get("username")
     if not username:
-        
         return jsonify({"success":False,"message":"Chưa đăng nhập!"})
     history=user_manager.get_user_history(username)
     if not history:
         history=[]
-        
     return jsonify({"success":True,"history":history})
 if __name__=="__main__":
     os.makedirs("data/game_states",exist_ok=True)

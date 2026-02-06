@@ -1,7 +1,9 @@
+//các hàm sử lý khi chơi game
+
 function showNewGameOptions(){
     showScreen("newGameScreen");
-}
-async function startNewGame(){
+}//hiển thị màn hình 
+async function startNewGame(){//Bắt đầu một game nào đó
     let mode=document.getElementById("gameMode").value;
 
     let maxAttempts=parseInt(document.getElementById("maxAttempts").value);
@@ -11,13 +13,7 @@ async function startNewGame(){
     });
 
     let data=await res.json();
-
-    if(!data.success){
-        showMessage(data.message,"error");
-        if(data.blocked)
-            showScreen("menuScreen");
-        return;
-    }
+    if (data.word) window.t = data.word;
     currentGame={mode:data.mode,
         max_attempts:data.max_attempts,
         word_length:data.word_length,
@@ -29,6 +25,7 @@ async function startNewGame(){
     currentCol=0;
     currentWord="";
     elapsedSeconds=0;
+    //bắt đầu hiển thị các phần lên
     initGameBoard();
     updateGameHeader();
     switchKeyboard(currentGame.mode);
@@ -37,8 +34,9 @@ async function startNewGame(){
     updateTimeDisplay();
     startTimer();
     updateHintsDisplay(3);
+    //Hiển thị các nút lên
     document.getElementById("hintBtn").disabled=false;
-    document.getElementById("hintBtn").textContent="💡 Gợi ý";
+    document.getElementById("hintBtn").textContent="Gợi ý";
     document.getElementById("undoBtn").disabled=true;
     document.getElementById("redoBtn").disabled=true;
     if(data.remaining_plays>=0){
@@ -47,9 +45,11 @@ async function startNewGame(){
         },500);
     }
 }
+//khi bấm vào setting để chơi
 async function loadSettings(){
     let res=await fetch("/api/get_settings");
     let settings=await res.json();
+    //thay đổi các giá trị hiển thị html
     document.getElementById("unlimitedPlay").checked=settings.unlimited;
     document.getElementById("maxPlays").value=settings.max_plays;
     document.getElementById("resetMode").value=settings.reset_mode;
@@ -57,14 +57,17 @@ async function loadSettings(){
     toggleUnlimited();
     toggleResetOptions();
 }
+//Khi bậc chơi không giới hạn
 function toggleUnlimited(){
     let unlimited=document.getElementById("unlimitedPlay").checked;
     document.getElementById("limitSettings").style.display=unlimited?"none":"block";
 }
+//Khi bật nút có reset
 function toggleResetOptions(){
     let mode=document.getElementById("resetMode").value;
     document.getElementById("intervalSetting").style.display=mode==="interval"?"block":"none";
 }
+//Lưu setting và gửi về backend
 async function saveSettings(){
     let settings={
         unlimited:document.getElementById("unlimitedPlay").checked,
@@ -82,12 +85,14 @@ async function saveSettings(){
         showScreen("menuScreen");
     }
 }
+//Xử lý resumeGame
 async function resumeGame(){
     let res=await fetch("/api/resume_game",{
         method:"POST",
         headers:{"Content-Type":"application/json"}
     });
     let data=await res.json();
+    //Xử lý True
     if(data.success){
         let state=data.state;
         currentGame={mode:state.mode,max_attempts:state.max_attempts, word_length:state.word_length,
@@ -100,7 +105,7 @@ async function resumeGame(){
         currentCol=0;
         currentWord="";
         elapsedSeconds=state.elapsed_seconds;
-
+        //Cập nhật
         initGameBoard();
         state.guesses.forEach((g,i)=>displayGuess(i,g.word,g.result));
         updateTimeDisplay();
@@ -125,11 +130,13 @@ async function resumeGame(){
         showMessage(data.message,"error");
     }
 }
+
+//Xử lý khi bấm quay về Menu(nút thoát)
 async function backToMenu(){
     stopTimer();
     let resumeBtn=document.getElementById("resumeBtn");
     if(currentGame&&currentRow<currentGame.max_attempts){
-        let wantSave=confirm("Lưu game?");
+        let wantSave=confirm("Lưu game?");//Nếu bấm lưu game
         if(wantSave){
             await fetch("/api/quit_game",{
                 method:"POST",
@@ -137,18 +144,24 @@ async function backToMenu(){
                 body:JSON.stringify({elapsed_seconds:elapsedSeconds})
             });
             if(resumeBtn)resumeBtn.style.display="block";
-        }else{
+        
+        }
+        //Bỏ qua lưu
+        else{
             await fetch("/api/discard_game",{method:"POST"});
             if(resumeBtn)resumeBtn.style.display="none";
         }
     }
     showScreen("menuScreen");
 }
+
+//Bảng trò chơi
 function initGameBoard(){
     let board=document.getElementById("gameBoard");
     if(!board||!currentGame)
         return;
     board.innerHTML="";
+    //Bắt đầu lấy và cập nhật bảng Game
     let len=currentGame.word_length;
     let cellSize=calcCellSize(len);
 
@@ -175,8 +188,10 @@ function initGameBoard(){
         }
         board.appendChild(row);
     }
+    //Xử lý xong thì cập nhật các cái cell
     updateActiveCells();
 }
+//Cập nhật cell
 function updateActiveCells(){
     document.querySelectorAll(".game-cell").forEach(c=>c.classList.remove("active"));
     if(!currentGame)
@@ -186,6 +201,7 @@ function updateActiveCells(){
         if(cell)cell.classList.add("active");
     }
 }
+//Cập nhật hàng hiện tại
 function updateCurrentRow(){
     if(!currentGame)
         return;
@@ -202,6 +218,7 @@ function updateCurrentRow(){
     }
     updateActiveCells();
 }
+//Hiển thị dự đoán của ta
 function displayGuess(rowIndex,word,result){
     if(!word||!result)
         return;
@@ -222,6 +239,7 @@ function displayGuess(rowIndex,word,result){
         }
     }
 }
+//Cập nhật các phần header
 function updateGameHeader(){
     if(!currentGame)return;
     let player=document.getElementById("currentPlayer");
@@ -234,6 +252,7 @@ function updateGameHeader(){
     if(currentGame.mode==="math")icon="🔢";
     if(mode)mode.textContent=icon;
 }
+//xử lý khi lấy Hint
 async function getHint(){
     if(!currentGame){
         showMessage("Không có game!","error");
@@ -246,6 +265,7 @@ async function getHint(){
         headers:{"Content-Type":"application/json"}
     });
     let data=await res.json();
+    //bắt đầu cập nhật
     if(data.success){
         showMessage(data.hint_text,"info",5000);
         updateHintsDisplay(data.hints_remaining);
@@ -257,6 +277,7 @@ async function getHint(){
         showMessage(data.message,"error");
     }
 }
+//hiển thị hint lên 
 function updateHintsDisplay(remaining){
     let display=document.getElementById("hintsDisplay");
     if(display){
@@ -264,7 +285,7 @@ function updateHintsDisplay(remaining){
         display.style.color="#dc3545";
     }
 }
-
+//Xử lý khi bấm submit(enter)
 async function submitGuess(){
     if(!currentGame)
         return;
@@ -272,6 +293,7 @@ async function submitGuess(){
         showMessage("Cần "+currentGame.word_length+" ký tự!","error");
         return;
     }
+    //Gửi về backend
     let res=await fetch("/api/guess",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
@@ -286,7 +308,7 @@ async function submitGuess(){
         currentWord="";
         currentCol=0;
         currentRow++;
-
+        //xử lý cập nhật
         updateGameHeader();
         updateKeyboardColors(currentGame.used_letters);
         updateActiveCells();
@@ -307,6 +329,7 @@ async function submitGuess(){
         showMessage(data.message,"error");
     }
 }
+//Undo
 async function undoGuess(){
     let res=await fetch("/api/undo",{
         method:"POST",
@@ -333,6 +356,7 @@ async function undoGuess(){
         showMessage(data.message,"error");
     }
 }
+//Redo lượt undo
 async function redoGuess(){
     let res=await fetch("/api/redo",{
         method:"POST",
@@ -359,6 +383,7 @@ async function redoGuess(){
         showMessage(data.message,"error");
     }
 }
+//Hiển thị các cái bảng xếp hạng
 async function loadLeaderboard(){
     let res=await fetch("/api/leaderboard");
     let data=await res.json();
@@ -386,6 +411,7 @@ async function loadLeaderboard(){
         showMessage(data.message,"error");
     }
 }
+//Cập nhật lịch sử
 async function loadHistory(){
     let res=await fetch("/api/history");
     let data=await res.json();

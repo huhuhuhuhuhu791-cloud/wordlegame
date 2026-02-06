@@ -150,12 +150,12 @@ class WordleGame:
         if self.mode=="english":
             with open("data/words/english.txt","r",encoding="utf-8") as f:
                 arr=[line.strip() for line in f]
-                n=random.randint(0,len(arr))
+                n=random.randint(0,len(arr)-1)
                 return arr[n]
         elif self.mode=="vietnamese":
            with open("data/words/vietnamese.txt","r",encoding="utf-8") as f:
                 arr=[line.strip() for line in f]
-                n=random.randint(0,len(arr))
+                n=random.randint(0,len(arr)-1)
                 return arr[n]
         else:
             arr=_MATH_POOL

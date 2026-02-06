@@ -6,7 +6,8 @@ let elapsedSeconds=0;
 let currentRow=0;
 let currentCol=0;
 let currentWord="";
-function isValidKey(key,mode){
+//Các hàm core chính
+function isValidKey(key,mode){//Xử lý phải valid Key không
     if(!key||key.length!==1)
         return false;
     let upper=key.toUpperCase();
@@ -15,21 +16,21 @@ function isValidKey(key,mode){
         return /^[0-9+\-*/=]$/.test(key);
     return /^[A-Z]$/.test(upper);
 }
-function isPrintableKey(event){
+function isPrintableKey(event){//có nên in kí tự đó ra màn hình
     if(event.ctrlKey||event.altKey||event.metaKey)
         return false;
     let bad=["Shift","Control","Alt","CapsLock","F1","F2","F3","F4",
-        "F5","F6","F7","F8","F9","F10","F11","F12"];
+        "F5","F6","F7","F8","F9","F10","F11","F12"];//Các phím không phải nút chính
     return!bad.includes(event.key);
 }
-function calcCellSize(len){
+function calcCellSize(len){//Tính toán kích thước 1 ô là bao nhiêu
     let size=Math.floor((440-(len-1)*5)/len);
     if(size>50)size=50;
 
     if(size<28)size=28;
     return size;
 }
-function showScreen(id){
+function showScreen(id){//Show màn hình khi click vào cái mới
     document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
     let screen=document.getElementById(id);
 
@@ -39,7 +40,7 @@ function showScreen(id){
         setTimeout(()=>document.getElementById("gameScreen").focus(),100);
     }
 }
-function showMessage(text,type="info",duration=3000){
+function showMessage(text,type="info",duration=3000){// hiển thị tin nhắn message
     let msg=document.getElementById("message");
     if(!msg)return;
     msg.textContent=text;
@@ -48,16 +49,17 @@ function showMessage(text,type="info",duration=3000){
     msg.style.display="block";
     setTimeout(()=>msg.style.display="none",duration);
 }
-function showModal(id){
+function showModal(id){//hiển thị modal
     let modal=document.getElementById(id);
 
     if(modal)modal.style.display="flex";
 }
-function closeModal(id){
+function closeModal(id){//Đóng modal 
     let modal=document.getElementById(id);
 
     if(modal)modal.style.display="none";
 }
+//Các hàm cập nhật hiển thị thời gian
 function updateTimeDisplay(){
     let el=document.getElementById("timeDisplay");
     if(el)el.textContent=elapsedSeconds+"s";
@@ -76,6 +78,7 @@ function stopTimer(){
         timerInterval=null;
     }
 }
+//Các hàm xử lý đổi bàn phím
 function switchKeyboard(mode){
     let alpha=document.getElementById("keyboard");
     let math=document.getElementById("mathKeyboard");
@@ -87,6 +90,7 @@ function switchKeyboard(mode){
         if(math)math.style.display="none";
     }
 }
+//Xử lý login (gọi về backend)
 async function login(){
     let username=document.getElementById("loginUsername").value.trim();
     let password=document.getElementById("loginPassword").value;
@@ -110,6 +114,7 @@ async function login(){
         showMessage(data.message,"error");
     }
 }
+//xử lý register(gọi về backend)
 async function register(){
     let username=document.getElementById("regUsername").value.trim();
     let password=document.getElementById("regPassword").value;
@@ -139,6 +144,7 @@ async function register(){
         showMessage(data.message,"error");
     }
 }
+//Xử lý bấm đăng xuất
 async function logout(){
     await fetch("/api/logout",{method:"POST"});
     currentUser=null;

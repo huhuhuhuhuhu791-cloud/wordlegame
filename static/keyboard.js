@@ -1,4 +1,6 @@
-function handleKeyPress(key){
+//Các hàm sử lý liên quan tới phím
+
+function handleKeyPress(key){//Xử lý nhập 
     if(!currentGame)
         return;
     if(currentRow>=currentGame.max_attempts)
@@ -19,6 +21,7 @@ function handleKeyPress(key){
         updateCurrentRow();
     }
 }
+//Xử lý phím xóa
 function handleBackspace(){
     if(!currentGame)
         return;
@@ -28,6 +31,7 @@ function handleBackspace(){
     currentWord=currentWord.slice(0,-1);
     updateCurrentRow();
 }
+//Xử lý phím enter
 function handleEnter(){
     if(!currentGame)
         return;
@@ -37,6 +41,7 @@ function handleEnter(){
         showMessage("Cần "+currentGame.word_length+" ký tự!","error");
     }
 }
+//Xử lý khi gõ trên Keyboard
 function toggleKeyboard(){
     let alpha=document.getElementById("keyboard");
     let math=document.getElementById("mathKeyboard");
@@ -55,12 +60,15 @@ function toggleKeyboard(){
         btn.textContent="Hiện";
     }
 }
+//Xử lý nhập từ
 function typeKey(letter){
     handleKeyPress(letter);
 }
+//xử lý xóa từ
 function deleteKey(){
     handleBackspace();
 }
+//xửu lý cập nhật các màu cell
 function updateKeyboardColors(usedLetters){
     if(!usedLetters)return;
     document.querySelectorAll(".key").forEach(k=>k.classList.remove("cell-correct","cell-present","cell-absent"));
@@ -70,7 +78,7 @@ function updateKeyboardColors(usedLetters){
 
                 btn.classList.add("cell-correct");
             }
-        });
+        });//Xóa hết màu của cái cell
     });
     usedLetters.present.forEach(letter=>{
         document.querySelectorAll(".key").forEach(btn=>{
@@ -79,7 +87,7 @@ function updateKeyboardColors(usedLetters){
                 btn.classList.add("cell-present");
             }
         });
-    });
+    });//Cập nhật lại trạng thái mới
     usedLetters.absent.forEach(letter=>{
         document.querySelectorAll(".key").forEach(btn=>{
             if(btn.textContent===letter&&!btn.classList.contains("cell-correct")&&!btn.classList.contains("cell-present")){
@@ -89,7 +97,9 @@ function updateKeyboardColors(usedLetters){
         });
     });
 }
+// xử lý các phím kích chuột và Login--register
 document.addEventListener("DOMContentLoaded",()=>{
+    //Xử lý login
     document.getElementById("loginUsername")?.addEventListener("keypress",e=>{
         if(e.key==="Enter")
             document.getElementById("loginPassword").focus();
@@ -101,13 +111,11 @@ document.addEventListener("DOMContentLoaded",()=>{
 
     });
 
-
+    //xử lý regis
     document.getElementById("regUsername")?.addEventListener("keypress",e=>{
         if(e.key==="Enter")
             document.getElementById("regPassword").focus();
     });
-
-
     document.getElementById("regPassword")?.addEventListener("keypress",e=>{
         if(e.key==="Enter")
             document.getElementById("regPasswordConfirm").focus();

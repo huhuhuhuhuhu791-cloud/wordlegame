@@ -6,36 +6,44 @@ class User:
     def __init__(self,username):
         self.name=username
         self.games=LinkedList()
+        #Lưu các thông số của trò chơi
         self.total_time=0.0
         self.total_games=0
         self.total_wins=0
         self.avg_time=0.0
         self.best_time=None
-        self.created_at=datetime.now().isoformat()
+        self.created_at=datetime.now().isoformat()#Ngày tạo acc
+        
+        #Lưu reset/chơi vô hạn lần
         self.last_played=None
         self.plays_today=0
         self.last_play_date=None
         self.next_reset_time=None
-class GameRecord:
+        
+class GameRecord:##Lưu lịch sử
     def __init__(self,time,attempts,won,mode):
+        #Lưu các thông số của Game vừa chơi
         self.time=time
         self.attempts=attempts
         self.won=won
         self.mode=mode
         self.timestamp=datetime.now().isoformat()
         self.date=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+#Lớp quản Lý user
 class UserManager:
+    
     def __init__(self,data_file="data/users.dat"):
         self.data_file=data_file
-        self.users=HashMap()
+        self.users=HashMap()#lưu users dạng hasmap
         self._load_users()
-    def can_play(self,username,unlimited=False,reset_mode="daily",max_plays=1):
+    def can_play(self,username,unlimited=False,reset_mode="daily",max_plays=1):#Check xem có thể chơi hay đang bị cấm
         if unlimited:
             return(True,"Unlimited plays",-1)
         user=self.users.get(username)
         if not user:
             return(False,"User not found",0)
         now=datetime.now()
+        #xét dựa theo mode mà chơi
         if reset_mode=="daily":
             today=now.date().isoformat()
             if user.last_play_date!=today:
@@ -59,23 +67,26 @@ class UserManager:
                 return(False,"Bạn đã hết lượt chơi",0)
         remaining=max_plays-user.plays_today
         return(True,f"Còn {remaining} lượt",remaining)
+    #chơi theo chế độ
     def record_play(self,username,reset_mode="daily",reset_interval_minutes=10):
         user=self.users.get(username)
         if not user:
             return False
         user.plays_today+=1
-        if reset_mode=="interval"and user.plays_today==1:
+        if reset_mode=="interval":
             from datetime import timedelta
             next_reset=datetime.now()+timedelta(minutes=reset_interval_minutes)
             user.next_reset_time=next_reset.isoformat()
         self._save_users()
         return True
+    #Load file user lên
     def _load_users(self):
         if os.path.exists(self.data_file):
             with open(self.data_file,"rb")as f:
                 user_dict=pickle.load(f)
                 for username,user_data in user_dict.items():
                     user=User(username)
+                    #Lấy các thông số của user ra 
                     user.plays_today=user_data.get('plays_today',0)
                     user.last_play_date=user_data.get('last_play_date',None)
                     user.next_reset_time=user_data.get('next_reset_time',None)
@@ -91,18 +102,21 @@ class UserManager:
                         game.timestamp=game_data["timestamp"]
                         game.date=game_data["date"]
                         user.games.append(game)
-                    self.users.set(username,user)
-    
+                    self.users.set(username,user)#Thêm vào user
+    #Lưu thông tin user
     def _save_users(self):
         os.makedirs(os.path.dirname(self.data_file),exist_ok=True)
         users_dict={}
+        
         for bucket in self.users.buckets:
             current=bucket.head
+            
             while current is not None:
                 username=current.data.key
                 user=current.data.value
                 games_list=[]
                 game_current=user.games.head
+                #Lấy hết các thông số user lưu dạng dict
                 while game_current is not None:
                     game=game_current.data
                     games_list.append({"time":game.time,"attempts":game.attempts,"won":game.won,"mode":game.mode,"timestamp":game.timestamp,"date":game.date})
@@ -111,7 +125,6 @@ class UserManager:
                     "name":user.name,
                     "games":games_list,
                     "total_time":user.total_time,
-                    
                     "total_games":user.total_games,
                     "total_wins":user.total_wins,
                     "avg_time":user.avg_time,
@@ -123,8 +136,10 @@ class UserManager:
                     "next_reset_time":user.next_reset_time
                 }
                 current=current.next
+        #Ghi tất cả file đó lại dưới dạng binary = pickle
         with open(self.data_file,"wb")as f:
             pickle.dump(users_dict,f)
+    #thêm và lấy user ra
     def add_or_get_user(self,username):
         if not self.users.contains(username):
             user=User(username)
@@ -132,6 +147,7 @@ class UserManager:
             self._save_users()
             return user
         return self.users.get(username)
+    #Thêm game vào result
     def add_game_result(self,username,time_elapsed,attempts,won,mode="english"):
         user=self.users.get(username)
         if not user:
@@ -146,8 +162,10 @@ class UserManager:
             user.avg_time=user.total_time/user.total_wins
             if user.best_time is None or time_elapsed<user.best_time:
                 user.best_time=time_elapsed
+        #Lưu thông tin user lại
         self._save_users()
         return True
+    #Lấy top20 dùng mảng động theo thời gian trung bình
     def get_top20(self):
         players=DynamicArray()
         for bucket in self.users.buckets:
@@ -165,6 +183,7 @@ class UserManager:
                     }
                     players.append(players_data)
                 current=current.next
+        #sắp xếp dùng bbsort để tìm
         for i in range(players.length()):
             for j in range(players.length()-1-i):
                 if players.get(j)["avg_time"]>players.get(j+1)["avg_time"]:
@@ -178,6 +197,7 @@ class UserManager:
             player["rank"]=i+1
             result.append(player)
         return result
+    #Lấy lịch sử của user theo các thông số đi kèm
     def get_user_history(self,username):
         user=self.users.get(username)
         if not user:
@@ -199,5 +219,5 @@ class UserManager:
             history.append(game_data)
             current=current.next
             index+=1
-        history.reverse()
+        history.reverse() #Đảo ngược
         return history

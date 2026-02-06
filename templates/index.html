@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordle Game - Flask</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Wordle Game</h1>
+        <div id="message" class="message" style="display:none;"></div>
+
+        <div id="loginScreen" class="screen active">
+            <h2>Đăng nhập</h2>
+            <div class="form-group">
+                <label>Tên đăng nhập:</label>
+                <input type="text" id="loginUsername" placeholder="Nhập tên của bạn" maxlength="20">
+            </div>
+            <div class="form-group">
+                <label>Mật khẩu:</label>
+                <input type="password" id="loginPassword" placeholder="Nhập mật khẩu" maxlength="20">
+            </div>
+            <div class="btn-group">
+                <button onclick="login()" class="btn-primary">Đăng nhập</button>
+                <button onclick="showScreen('registerScreen')" class="btn-secondary">Đăng ký</button>
+            </div>
+        </div>
+
+ 
+        <div id="registerScreen" class="screen">
+            <h2>Đăng ký tài khoản</h2>
+            <div class="form-group">
+                <label>Tên đăng nhập:</label>
+                <input type="text" id="regUsername" placeholder="Tạo tên đăng nhập" maxlength="20">
+            </div>
+            <div class="form-group">
+                <label>Mật khẩu:</label>
+                <input type="password" id="regPassword" placeholder="Tạo mật khẩu" maxlength="20">
+            </div>
+            <div class="form-group">
+                <label>Xác nhận mật khẩu:</label>
+                <input type="password" id="regPasswordConfirm" placeholder="Nhập lại mật khẩu" maxlength="20">
+            </div>
+            <div class="btn-group">
+                <button onclick="register()" class="btn-primary">Tạo tài khoản</button>
+                <button onclick="showScreen('loginScreen')" class="btn-secondary">Quay lại</button>
+            </div>
+        </div>
+
+        <div id="menuScreen" class="screen">
+            <h2>Chào mừng, <span id="playerName"></span>!</h2>
+            <div class="menu-buttons">
+                <button onclick="showNewGameOptions()" class="btn-primary">🎮 Game mới</button>
+                <button onclick="resumeGame()" class="btn-warning" id="resumeBtn" style="display: none;">▶️ Tiếp tục game</button>
+                <button onclick="loadLeaderboard()" class="btn-secondary">🏆 Top 20</button>
+                <button onclick="loadHistory()" class="btn-secondary">📜 Lịch sử</button>
+                <button onclick="logout()" class="btn-danger">🚪 Đăng xuất</button>
+                <button onclick="showScreen('settingsScreen')" class="btn-secondary">⚙️ Cài đặt</button>
+            </div>
+        </div>
+
+        <div id="settingsScreen" class="screen">
+            <h2>⚙️ Cài đặt Game</h2>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="unlimitedPlay" onchange="toggleUnlimited()"> 
+                    Cho phép chơi vô hạn
+                </label>
+            </div>
+            
+            <div id="limitSettings" style="display:none;">
+                <div class="form-group">
+                    <label>Số lượt chơi tối đa:</label>
+                    <input type="number" id="maxPlays" value="1" min="1" max="10">
+                </div>
+                
+                <div class="form-group">
+                    <label>Chế độ reset:</label>
+                    <select id="resetMode" onchange="toggleResetOptions()">
+                        <option value="daily">Reset lúc 0:00 hàng ngày</option>
+                        <option value="interval">Reset sau khoảng thời gian</option>
+                        <option value="never">Không reset</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="intervalSetting" style="display:none;">
+                    <label>Reset sau (phút):</label>
+                    <input type="number" id="resetInterval" value="10" min="1" max="1440">
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button onclick="saveSettings()" class="btn-primary">💾 Lưu</button>
+                <button onclick="showScreen('menuScreen')" class="btn-secondary">Quay lại</button>
+            </div>
+</div>
+
+        <div id="newGameScreen" class="screen">
+            <h2>Cài đặt game mới</h2>
+            <div class="form-group">
+                <label>Chế độ chơi:</label>
+                <select id="gameMode">
+                    <option value="english">🇬🇧 Tiếng Anh</option>
+                    <option value="vietnamese">🇻🇳 Tiếng Việt</option>
+                    <option value="math">🔢 Toán học</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Số lượt đoán:</label>
+                <select id="maxAttempts">
+                    <option value="4">4 lượt (Khó)</option>
+                    <option value="6" selected>6 lượt (Chuẩn)</option>
+                    <option value="8">8 lượt (Dễ)</option>
+                </select>
+            </div>
+   
+            <div class="btn-group">
+                <button onclick="startNewGame()" class="btn-primary">Bắt đầu</button>
+                <button onclick="showScreen('menuScreen')" class="btn-secondary">Hủy</button>
+            </div>
+        </div>
+
+        <div id="gameScreen" class="screen" tabindex="0">
+            <div class="game-header">
+                <div class="stat">
+                    <div class="stat-value" id="currentPlayer">Player</div>
+                    <div class="stat-label">Người chơi</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="attemptsDisplay">0/6</div>
+                    <div class="stat-label">Lượt đoán</div>
+                </div>
+                <div class="stat">
+                    <div id="timeDisplay">0s</div>
+                    <div class="stat-label">Thời gian</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="modeDisplay">🇬🇧</div>
+                    <div class="stat-label">Chế độ</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="hintsDisplay">💡 3</div>
+                    <div class="stat-label">Gợi ý</div>
+                </div>
+            </div>
+
+            <div id="gameBoard" class="game-board"></div>
+
+            <div id="keyboard" class="keyboard">
+                <div class="keyboard-row">
+                    <button class="key" onclick="typeKey('Q')">Q</button>
+                    <button class="key" onclick="typeKey('W')">W</button>
+                    <button class="key" onclick="typeKey('E')">E</button>
+                    <button class="key" onclick="typeKey('R')">R</button>
+                    <button class="key" onclick="typeKey('T')">T</button>
+                    <button class="key" onclick="typeKey('Y')">Y</button>
+                    <button class="key" onclick="typeKey('U')">U</button>
+                    <button class="key" onclick="typeKey('I')">I</button>
+                    <button class="key" onclick="typeKey('O')">O</button>
+                    <button class="key" onclick="typeKey('P')">P</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key" onclick="typeKey('A')">A</button>
+                    <button class="key" onclick="typeKey('S')">S</button>
+                    <button class="key" onclick="typeKey('D')">D</button>
+                    <button class="key" onclick="typeKey('F')">F</button>
+                    <button class="key" onclick="typeKey('G')">G</button>
+                    <button class="key" onclick="typeKey('H')">H</button>
+                    <button class="key" onclick="typeKey('J')">J</button>
+                    <button class="key" onclick="typeKey('K')">K</button>
+                    <button class="key" onclick="typeKey('L')">L</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key key-wide" onclick="submitGuess()">ENTER</button>
+                    <button class="key" onclick="typeKey('Z')">Z</button>
+                    <button class="key" onclick="typeKey('X')">X</button>
+                    <button class="key" onclick="typeKey('C')">C</button>
+                    <button class="key" onclick="typeKey('V')">V</button>
+                    <button class="key" onclick="typeKey('B')">B</button>
+                    <button class="key" onclick="typeKey('N')">N</button>
+                    <button class="key" onclick="typeKey('M')">M</button>
+                    <button class="key key-wide" onclick="deleteKey()">⌫</button>
+                </div>
+            </div>
+            <div id="mathKeyboard" class="keyboard" style="display:none;">
+                <div class="keyboard-row">
+                    <button class="key" onclick="typeKey('7')">7</button>
+                    <button class="key" onclick="typeKey('8')">8</button>
+                    <button class="key" onclick="typeKey('9')">9</button>
+                    <button class="key key-op" onclick="typeKey('*')">×</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key" onclick="typeKey('4')">4</button>
+                    <button class="key" onclick="typeKey('5')">5</button>
+                    <button class="key" onclick="typeKey('6')">6</button>
+                    <button class="key key-op" onclick="typeKey('/')">÷</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key" onclick="typeKey('1')">1</button>
+                    <button class="key" onclick="typeKey('2')">2</button>
+                    <button class="key" onclick="typeKey('3')">3</button>
+                    <button class="key key-op" onclick="typeKey('-')">−</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key key-wide" onclick="typeKey('0')">0</button>
+                    <button class="key key-op" onclick="typeKey('+')">+</button>
+                    <button class="key key-op key-eq" onclick="typeKey('=')">＝</button>
+                    <button class="key key-wide" onclick="deleteKey()">⌫</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key key-wide key-enter" onclick="submitGuess()">ENTER</button>
+                </div>
+            </div>
+
+            <button onclick="toggleKeyboard()" class="btn-keyboard-toggle" id="keyboardToggle">
+                🎹 Ẩn bàn phím
+            </button>
+
+            <div class="btn-group" style="margin-top: 15px;">
+                <button onclick="submitGuess()" class="btn-success">✓ Đoán</button>
+                <button onclick="getHint()" class="btn-warning" id="hintBtn">💡 Gợi ý</button>
+                <button onclick="undoGuess()" class="btn-secondary" id="undoBtn">↶ Undo</button>
+                <button onclick="redoGuess()" class="btn-secondary" id="redoBtn">↷ Redo</button>
+                <button onclick="backToMenu()" class="btn-danger">← Thoát</button>
+            </div>
+        </div>
+        <div id="leaderboardModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>🏆 Top 20 Players</h2>
+                    <button onclick="closeModal('leaderboardModal')" class="btn-close">✕</button>
+                </div>
+                <div id="leaderboardList"></div>
+            </div>
+        </div>
+        <div id="historyModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>📜 Lịch sử chơi</h2>
+                    <button onclick="closeModal('historyModal')" class="btn-close">✕</button>
+                </div>
+                <div id="historyList"></div>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='core.js') }}"></script>
+    <script src="{{ url_for('static', filename='game.js') }}"></script>
+    <script src="{{ url_for('static', filename='keyboard.js') }}"></script>
+</body>
+</html>

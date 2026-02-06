@@ -54,6 +54,9 @@ def login():# Xử lý Đăng nhập
                     "message":"Đăng nhập thành công!"})
 
 @app.route("/api/register",methods=["POST"])
+
+
+
 def register():#Xử lý đăng ký
     data=request.get_json()
     username=data.get("username","")
@@ -155,17 +158,15 @@ def make_guess():
         file_handler.save_game_state(username,state)
     return jsonify(response)
 
+
 @app.route("/api/discard_game",methods=["POST"])
 def discard_game():
     username=session.get("username")
     if not username:
-        
         return jsonify({"success":False,"message":"Chưa đăng nhập!"})
     if username in active_games:
-        
         del active_games[username]
     file_handler.delete_game_state(username)
-    
     return jsonify({"success":True,"message":"Đã hủy và không lưu game!"})
 
 @app.route("/api/undo",methods=["POST"])
@@ -180,13 +181,12 @@ def undo():
     result=game.undo()
     
     file_handler.save_game_state(username,game.get_state())
-    return jsonify({"success":result.get("success",False),
-        "message":result.get("message",""),
-        "attempts":result.get("attempts",0),
-        "guesses":result.get("guesses",[]),
-        "used_letters":result.get("used_letters",{"correct":[],"present":[],"absent":[]}),
-        "can_undo":result.get("can_undo",False),
-        "can_redo":result.get("can_redo",False)
+    return jsonify({"success":result.get("success",False),"message":result.get("message",""),"attempts":result.get("attempts",0),
+                    
+                    "guesses":result.get("guesses",[]),
+                    "used_letters":result.get("used_letters",{"correct":[],"present":[],"absent":[]}),
+                    "can_undo":result.get("can_undo",False),
+                    "can_redo":result.get("can_redo",False)
     })
 
 @app.route("/api/redo",methods=["POST"])
@@ -200,13 +200,13 @@ def redo():
     result=game.redo()
     file_handler.save_game_state(username,game.get_state())
     return jsonify({"success":result.get("success",False),"message":result.get("message",""),
-        "attempts":result.get("attempts",0),
-        "guesses":result.get("guesses",[]),
-        "used_letters":result.get("used_letters",{"correct":[],"present":[],"absent":[]}),
-        "game_over":result.get("game_over",False),
-        "won":result.get("won",False),
-        "can_undo":result.get("can_undo",False),
-        "can_redo":result.get("can_redo",False)
+                    "attempts":result.get("attempts",0),
+                    "guesses":result.get("guesses",[]),
+                    "used_letters":result.get("used_letters",{"correct":[],"present":[],"absent":[]}),
+                    "game_over":result.get("game_over",False),
+                    "won":result.get("won",False),
+                    "can_undo":result.get("can_undo",False),
+                    "can_redo":result.get("can_redo",False)
     })
 
 @app.route("/api/resume_game",methods=["POST"])
@@ -282,11 +282,11 @@ def get_history():
         history=[]
         
     return jsonify({"success":True,"history":history})
-
 if __name__=="__main__":
     os.makedirs("data/game_states",exist_ok=True)
     if not os.path.exists("data/accounts.dat"):
         accounts=LinkedList()
         file_handler.save_accounts(accounts)
     app.run(debug=True,host="0.0.0.0",port=5000)
+ 
     

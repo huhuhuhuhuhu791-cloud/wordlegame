@@ -201,17 +201,3 @@ class UserManager:
             index+=1
         history.reverse()
         return history
-    def delete_user(self,username):
-        if self.users.contains(username):
-            self.users.delete(username)
-            self._save_users()
-            return True
-        return False
-    def get_all_usernames(self):
-        usernames=LinkedList()
-        for bucket in self.users.buckets:
-            current=bucket.head
-            while current is not None:
-                usernames.append(current.data.key)
-                current=current.next
-        return usernames.to_array()

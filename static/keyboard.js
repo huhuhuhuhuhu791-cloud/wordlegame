@@ -45,14 +45,14 @@ function toggleKeyboard(){
     keyboardVisible=!keyboardVisible;
     if(keyboardVisible){
         switchKeyboard(currentGame?currentGame.mode:"english");
-        btn.textContent="🎹 Ẩn";
+        btn.textContent=" Ẩn";
     }else{
         if(alpha)
             alpha.style.display="none";
         if(math)
 
             math.style.display="none";
-        btn.textContent="🎹 Hiện";
+        btn.textContent="Hiện";
     }
 }
 function typeKey(letter){
@@ -139,8 +139,6 @@ document.addEventListener("DOMContentLoaded",()=>{
             handleKeyPress(e.key);
         }
     });
-
-
     window.addEventListener("click",e=>{
         document.querySelectorAll(".modal").forEach(m=>{
             if(e.target===m){

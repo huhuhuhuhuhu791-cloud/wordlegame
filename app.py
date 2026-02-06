@@ -22,7 +22,7 @@ def index():
     return render_template("index.html")
 
 @app.route("/api/login",methods=["POST"])
-def login():
+def login():# Xử lý Đăng nhập
     data=request.get_json()
     username=data.get("username","").strip()
     password=data.get("password","").strip()
@@ -54,7 +54,7 @@ def login():
                     "message":"Đăng nhập thành công!"})
 
 @app.route("/api/register",methods=["POST"])
-def register():
+def register():#Xử lý đăng ký
     data=request.get_json()
     username=data.get("username","")
     password=data.get("password","")
@@ -70,8 +70,7 @@ def register():
         current=current.next
     if accounts.length()>=5:
         return jsonify({"success":False,"message":"Đã đạt giới hạn 5 tài khoản!"})
- 
-    new_account=Account(username,password)
+    new_account=Account(username,password)#Tạo account
     accounts.append(new_account)
     file_handler.save_accounts(accounts)
     user_manager.add_or_get_user(username)
@@ -79,21 +78,18 @@ def register():
     return jsonify({"success":True,"username":username,"message":"Đăng ký thành công!"})
 
 @app.route("/api/logout",methods=["POST"])
-def logout():
-    session.pop("username",None)
+def logout():#Đăng xuất
+    session.pop("username",None)#Xóa username ở session hiện tại
     
     return jsonify({"success":True,"message":"Đã đăng xuất!"})
-
-
 @app.route("/api/new_game",methods=["POST"])
-
-def new_game():
+def new_game():#Bắt đầu trò chơi
     username=session.get("username")
     if not username:
         return jsonify({"success":False,"message":"Chưa đăng nhập!"})
+    #Xử lý các trò chơi
     data=request.get_json()
     mode=data.get("mode","english")
-    
     max_attempts=int(data.get("max_attempts",6))
     can_play,message,remaining=user_manager.can_play(username,unlimited=game_settings["unlimited"],
     reset_mode=game_settings["reset_mode"],

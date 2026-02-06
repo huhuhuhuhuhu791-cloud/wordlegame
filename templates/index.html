@@ -51,12 +51,12 @@
         <div id="menuScreen" class="screen">
             <h2>Chào mừng, <span id="playerName"></span>!</h2>
             <div class="menu-buttons">
-                <button onclick="showNewGameOptions()" class="btn-primary">🎮 Game mới</button>
-                <button onclick="resumeGame()" class="btn-warning" id="resumeBtn" style="display: none;">▶️ Tiếp tục game</button>
-                <button onclick="loadLeaderboard()" class="btn-secondary">🏆 Top 20</button>
-                <button onclick="loadHistory()" class="btn-secondary">📜 Lịch sử</button>
-                <button onclick="logout()" class="btn-danger">🚪 Đăng xuất</button>
-                <button onclick="showScreen('settingsScreen')" class="btn-secondary">⚙️ Cài đặt</button>
+                <button onclick="showNewGameOptions()" class="btn-primary">Game mới</button>
+                <button onclick="resumeGame()" class="btn-warning" id="resumeBtn" style="display: none;">Tiếp tục game</button>
+                <button onclick="loadLeaderboard()" class="btn-secondary">Top 20</button>
+                <button onclick="loadHistory()" class="btn-secondary"> Lịch sử</button>
+                <button onclick="logout()" class="btn-danger">Đăng xuất</button>
+                <button onclick="showScreen('settingsScreen')" class="btn-secondary">Cài đặt</button>
             </div>
         </div>
 
@@ -92,7 +92,7 @@
             </div>
             
             <div class="btn-group">
-                <button onclick="saveSettings()" class="btn-primary">💾 Lưu</button>
+                <button onclick="saveSettings()" class="btn-primary">Lưu</button>
                 <button onclick="showScreen('menuScreen')" class="btn-secondary">Quay lại</button>
             </div>
 </div>
@@ -141,7 +141,7 @@
                     <div class="stat-label">Chế độ</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-value" id="hintsDisplay">💡 3</div>
+                    <div class="stat-value" id="hintsDisplay"> 3</div>
                     <div class="stat-label">Gợi ý</div>
                 </div>
             </div>
@@ -215,21 +215,21 @@
             </div>
 
             <button onclick="toggleKeyboard()" class="btn-keyboard-toggle" id="keyboardToggle">
-                🎹 Ẩn bàn phím
+                 Ẩn bàn phím
             </button>
 
             <div class="btn-group" style="margin-top: 15px;">
                 <button onclick="submitGuess()" class="btn-success">✓ Đoán</button>
-                <button onclick="getHint()" class="btn-warning" id="hintBtn">💡 Gợi ý</button>
-                <button onclick="undoGuess()" class="btn-secondary" id="undoBtn">↶ Undo</button>
-                <button onclick="redoGuess()" class="btn-secondary" id="redoBtn">↷ Redo</button>
+                <button onclick="getHint()" class="btn-warning" id="hintBtn"> Gợi ý</button>
+                <button onclick="undoGuess()" class="btn-secondary" id="undoBtn"> Undo</button>
+                <button onclick="redoGuess()" class="btn-secondary" id="redoBtn">Redo</button>
                 <button onclick="backToMenu()" class="btn-danger">← Thoát</button>
             </div>
         </div>
         <div id="leaderboardModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>🏆 Top 20 Players</h2>
+                    <h2>Top 20 Players</h2>
                     <button onclick="closeModal('leaderboardModal')" class="btn-close">✕</button>
                 </div>
                 <div id="leaderboardList"></div>
@@ -238,7 +238,7 @@
         <div id="historyModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>📜 Lịch sử chơi</h2>
+                    <h2> Lịch sử chơi</h2>
                     <button onclick="closeModal('historyModal')" class="btn-close">✕</button>
                 </div>
                 <div id="historyList"></div>

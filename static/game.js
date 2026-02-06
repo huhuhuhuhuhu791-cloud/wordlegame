@@ -115,7 +115,7 @@ async function resumeGame(){
         updateHintsDisplay(currentGame.hints_remaining);
         if(currentGame.hints_remaining<=0){
             document.getElementById("hintBtn").disabled=true;
-            document.getElementById("hintBtn").textContent="💡 Hết";
+            document.getElementById("hintBtn").textContent="Hết";
         }
         showScreen("gameScreen");
         document.getElementById("undoBtn").disabled=!data.can_undo;
@@ -251,7 +251,7 @@ async function getHint(){
         updateHintsDisplay(data.hints_remaining);
         if(data.hints_remaining<=0){
             document.getElementById("hintBtn").disabled=true;
-            document.getElementById("hintBtn").textContent="💡 Hết";
+            document.getElementById("hintBtn").textContent="Hết";
         }
     }else{
         showMessage(data.message,"error");
@@ -260,7 +260,7 @@ async function getHint(){
 function updateHintsDisplay(remaining){
     let display=document.getElementById("hintsDisplay");
     if(display){
-        display.textContent="💡"+remaining;
+        display.textContent=remaining;
         display.style.color="#dc3545";
     }
 }
@@ -417,52 +417,4 @@ async function loadHistory(){
         showMessage(data.message,"error");
     }
 }
-// ==================== ADMIN FUNCTIONS ====================
-
-async function loadAdminUsers() {
-    try {
-        let res = await fetch("/api/admin/users");
-        let data = await res.json();
-        
-        if (data.success) {
-            // Cập nhật thống kê
-            document.getElementById("totalUsers").textContent = data.total;
-            
-            // Hiển thị danh sách
-            let list = document.getElementById("adminUsersList");
-            if (!list) return;
-            
-            if (data.users.length === 0) {
-                list.innerHTML = '<p style="text-align:center;padding:20px;">Chưa có user nào</p>';
-                return;
-            }
-            
-            let html = '<table class="admin-table">';
-            html += '<tr><th>STT</th><th>Username</th><th>Tạo lúc</th><th>Games</th><th>Wins</th><th>Thao tác</th></tr>';
-            
-            data.users.forEach((user, i) => {
-                let created = new Date(user.created_at).toLocaleDateString('vi-VN');
-                
-                html += '<tr>';
-                html += `<td>${i + 1}</td>`;
-                html += `<td><strong>${user.username}</strong></td>`;
-                html += `<td>${created}</td>`;
-                html += `<td>${user.total_games}</td>`;
-                html += `<td>${user.total_wins}</td>`;
-                html += `<td>
-                    <button onclick="adminResetPassword('${user.username}')" class="btn-mini btn-warning">🔑 Reset</button>
-                    <button onclick="adminDeleteUser('${user.username}')" class="btn-mini btn-danger">🗑️ Xóa</button>
-                </td>`;
-                html += '</tr>';
-            });
-            
-            html += '</table>';
-            list.innerHTML = html;
-        } else {
-            showMessage(data.message, "error");
-        }
-    } catch (error) {
-        showMessage("Lỗi load users: " + error, "error");
-    }
-}
-
+ 

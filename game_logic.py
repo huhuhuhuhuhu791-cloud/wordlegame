@@ -1,5 +1,5 @@
 from datetime import datetime
-from data_structures import LinkedList,Stack,HashMap,DynamicArray
+from data_structures import LinkedList,Stack,HashMap
 import random
 #xử lý biểu thức toán học
 def _precedence(op):
@@ -256,7 +256,7 @@ class WordleGame:
         r=HashMap()
         r.set("success",True)
         r.set("word",word)
-        r.set("result",result_array.to_list())
+        r.set("result",result_array)
         r.set("attempts",self.attempts)
         r.set("max_attempts",self.max_attempts)
         r.set("game_over",self.game_over)
@@ -269,27 +269,25 @@ class WordleGame:
         return r
     def _check_word(self,word):
         n=self.word_length
-        result=DynamicArray()
-        for _ in range(n):
-            result.append(0)
-        target_arr=DynamicArray()
-        word_arr=DynamicArray()
-        for ch in self.target_word:
-            target_arr.append(ch)
-        for ch in word:
-            word_arr.append(ch)
+        result=[0]*n  # Dùng list Python thay vì DynamicArray
+        target_arr=list(self.target_word)  # Chuyển string thành list
+        word_arr=list(word)  # Chuyển string thành list
+        
+        # Đánh dấu các vị trí đúng
         for i in range(n):
-            if word_arr.get(i)==target_arr.get(i):
-                result.set_value(i,2)
-                target_arr.set_value(i,None)
-                word_arr.set_value(i,None)
+            if word_arr[i]==target_arr[i]:
+                result[i]=2
+                target_arr[i]=None
+                word_arr[i]=None
+        
+        # Đánh dấu các chữ cái có nhưng sai vị trí
         for i in range(n):
-            if word_arr.get(i) is not None:
-                letter=word_arr.get(i)
+            if word_arr[i] is not None:
+                letter=word_arr[i]
                 for j in range(n):
-                    if target_arr.get(j)==letter:
-                        result.set_value(i,1)
-                        target_arr.set_value(j,None)
+                    if target_arr[j]==letter:
+                        result[i]=1
+                        target_arr[j]=None
                         break
         return result
     def _update_used_letters(self,word,result):
@@ -298,12 +296,12 @@ class WordleGame:
         absent_list=self.used_letters.get("absent")
         for i in range(self.word_length):
             letter=word[i]
-            if result.get(i)==2:
+            if result[i]==2:
                 if not correct_list.contains(letter):
                     correct_list.append(letter)
                 if present_list.contains(letter):
                     present_list.delete(letter)
-            elif result.get(i)==1:
+            elif result[i]==1:
                 if not present_list.contains(letter) and not correct_list.contains(letter):
                     present_list.append(letter)
             else:
@@ -409,7 +407,7 @@ class WordleGame:
         cur=self.guesses.head
         while cur:
             result.append({"word":cur.data.get("word"),
-                           "result":cur.data.get("result").to_list(),
+                           "result":cur.data.get("result"),
                            "timestamp":cur.data.get("timestamp")})
             cur=cur.next
         return result
@@ -446,10 +444,8 @@ class WordleGame:
         for g in state["guesses"]:
             gd=HashMap()
             gd.set("word",g["word"])
-            ra=DynamicArray()
-            for v in g["result"]:
-                ra.append(v)
-            gd.set("result",ra)
+            # Chuyển result về list Python thay vì DynamicArray
+            gd.set("result",g["result"])
             gd.set("timestamp",g["timestamp"])
             game.guesses.append(gd)
         game.used_letters=HashMap()

@@ -1,4 +1,4 @@
-from data_structures import HashMap,DynamicArray,LinkedList
+from data_structures import HashMap,LinkedList
 import pickle
 import os
 from datetime import datetime
@@ -165,9 +165,9 @@ class UserManager:
         #Lưu thông tin user lại
         self._save_users()
         return True
-    #Lấy top20 dùng mảng động theo thời gian trung bình
+    #Lấy top20 dùng list Python thay vì DynamicArray
     def get_top20(self):
-        players=DynamicArray()
+        players=[]  # Dùng list Python thay vì DynamicArray
         for bucket in self.users.buckets:
             current=bucket.head
             while current is not None:
@@ -183,19 +183,20 @@ class UserManager:
                     }
                     players.append(players_data)
                 current=current.next
-        #sắp xếp dùng bbsort để tìm
-        for i in range(players.length()):
-            for j in range(players.length()-1-i):
-                if players.get(j)["avg_time"]>players.get(j+1)["avg_time"]:
-                    temp=players.get(j)
-                    players.set_value(j,players.get(j+1))
-                    players.set_value(j+1,temp)
+        
+        # Sắp xếp dùng bubble sort
+        n=len(players)
+        for i in range(n):
+            for j in range(n-1-i):
+                if players[j]["avg_time"]>players[j+1]["avg_time"]:
+                    players[j],players[j+1]=players[j+1],players[j]
+        
+        # Lấy top 20
         result=[]
-        limit=min(20,players.length())
+        limit=min(20,len(players))
         for i in range(limit):
-            player=players.get(i)
-            player["rank"]=i+1
-            result.append(player)
+            players[i]["rank"]=i+1
+            result.append(players[i])
         return result
     #Lấy lịch sử của user theo các thông số đi kèm
     def get_user_history(self,username):

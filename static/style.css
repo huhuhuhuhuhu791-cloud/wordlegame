@@ -3,8 +3,9 @@
     padding: 0;
     box-sizing: border-box;
 }
+/*Nền trang và trang giữa (phần body)*/
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Montserrat', sans-serif;
     background: url('37644.jpg') center/cover fixed;
     display: flex;
     justify-content: center;
@@ -22,7 +23,7 @@ body {
 }
 h1, h2 {
     text-align: center;
-    color: #333;
+    color: #667eea;
     margin-bottom: 20px;
 }
 .screen {
@@ -38,13 +39,14 @@ h1, h2 {
 label {
     display: block;
     margin-bottom: 5px;
-    color: #666;
+    color: #555;
     font-size: 14px;
+    font-weight: 600;
 }
 input, select {
     width: 100%;
     padding: 10px;
-    border: 2px solid #ddd;
+    border: 2px solid #e3e8ff;
     border-radius: 5px;
     font-size: 14px;
 }
@@ -59,11 +61,10 @@ button {
     font-size: 14px;
     font-weight: bold;
     cursor: pointer;
-    transition: all 0.2s;
 }
 
 button:hover {
-    transform: translateY(-2px);
+    opacity: 0.9;
 }
 .btn-group {
     display: flex;
@@ -82,28 +83,28 @@ button:hover {
 }
 
 .btn-secondary {
-    background: #6c757d;
+    background: #4facfe;
     color: white;
 }
 
 .btn-success {
-    background: #28a745;
+    background: #38ef7d;
     color: white;
 }
 
 .btn-warning {
-    background: #ffc107;
-    color: #333;
+    background: #f5576c;
+    color: white;
 }
 
 .btn-danger {
-    background: #dc3545;
+    background: #fa709a;
     color: white;
 }
 .game-header {
     display: flex;
     justify-content: space-around;
-    background: #f5f5f5;
+    background: #f0f4ff;
     padding: 10px;
     border-radius: 8px;
     margin-bottom: 15px;
@@ -116,12 +117,12 @@ button:hover {
 .stat-value {
     font-weight: bold;
     font-size: 16px;
-    color: #333;
+    color: #667eea;
 }
 
 .stat-label {
     font-size: 11px;
-    color: #666;
+    color: #888;
 }
 
 /* Bàn chơi */
@@ -141,7 +142,7 @@ button:hover {
 .game-cell {
     width: var(--cell-size, 50px);
     height: var(--cell-size, 50px);
-    border: 2px solid #ddd;
+    border: 2px solid #e3e8ff;
     border-radius: 4px;
     display: flex;
     align-items: center;
@@ -153,7 +154,7 @@ button:hover {
 }
 
 .game-cell.filled {
-    border-color: #888;
+    border-color: #667eea;
 }
 
 .game-cell.active {
@@ -161,24 +162,24 @@ button:hover {
     border-width: 3px;
 }
 .cell-correct {
-    background: #6aaa64 !important;
+    background: #56ab2f !important;
     color: white !important;
-    border-color: #6aaa64 !important;
+    border-color: #56ab2f !important;
 }
 
 .cell-present {
-    background: #c9b458 !important;
+    background: #f2994a !important;
     color: white !important;
-    border-color: #c9b458 !important;
+    border-color: #f2994a !important;
 }
 
 .cell-absent {
-    background: #787c7e !important;
+    background: #b8c5ff !important;
     color: white !important;
-    border-color: #787c7e !important;
+    border-color: #b8c5ff !important;
 }
 .keyboard {
-    background: #f5f5f5;
+    background: #f0f4ff;
     padding: 10px;
     border-radius: 8px;
     margin: 15px auto;
@@ -198,7 +199,7 @@ button:hover {
     height: 48px;
     border: none;
     border-radius: 5px;
-    background: #d3d6da;
+    background: white;
     color: #333;
     font-size: 13px;
     font-weight: bold;
@@ -207,7 +208,8 @@ button:hover {
 }
 
 .key:hover {
-    background: #bbb;
+    background: #667eea;
+    color: white;
 }
 
 .key-wide {
@@ -222,18 +224,18 @@ button:hover {
 }
 
 .message.success {
-    background: #d4edda;
-    color: #155724;
+    background: #d4f4dd;
+    color: #1e7e34;
 }
 
 .message.error {
-    background: #f8d7da;
-    color: #721c24;
+    background: #ffe0e6;
+    color: #c81e3a;
 }
 
 .message.info {
-    background: #d1ecf1;
-    color: #0c5460;
+    background: #e0f0ff;
+    color: #0056b3;
 }
 .modal {
     display: none;
@@ -264,14 +266,18 @@ button:hover {
     align-items: center;
     margin-bottom: 15px;
     padding-bottom: 10px;
-    border-bottom: 2px solid #ddd;
+    border-bottom: 2px solid #e3e8ff;
 }
 .btn-close {
     background: none;
     border: none;
     font-size: 24px;
     cursor: pointer;
-    color: #666;
+    color: #667eea;
+}
+
+.btn-close:hover {
+    color: #fa709a;
 }
 
 .menu-buttons {
@@ -291,17 +297,23 @@ table {
 }
 
 table th {
-    background: #f0f0f0;
+    background: #f0f4ff;
     padding: 10px;
     text-align: center;
     font-size: 13px;
+    color: #667eea;
+    font-weight: bold;
 }
 
 table td {
     padding: 8px;
     text-align: center;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #e3e8ff;
     font-size: 13px;
+}
+
+table tr:hover {
+    background: #f0f4ff;
 }
 
 .hidden {
@@ -325,6 +337,4 @@ table td {
     .key-wide {
         min-width: 50px;
     }
-
-
 }

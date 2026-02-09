@@ -82,20 +82,31 @@ def new_game():#Bắt đầu trò chơi
     data=request.get_json()
     mode=data.get("mode","english")
     max_attempts=int(data.get("max_attempts",6))
+    blind_mode=data.get("blind_mode",False)   
+    
     can_play,message,remaining=user_manager.can_play(username,unlimited=game_settings["unlimited"],
     reset_mode=game_settings["reset_mode"],
         max_plays=game_settings["max_plays"])
     if not can_play:
         return jsonify({"success":False,"message":message,"blocked":True})
-    game=WordleGame(mode=mode,max_attempts=max_attempts)
+    
+    game=WordleGame(mode=mode,max_attempts=max_attempts,blind_mode=blind_mode)   
 
     active_games[username]=game
     file_handler.delete_game_state(username)
     #Lưu lịch sử
     user_manager.record_play(username,reset_mode=game_settings["reset_mode"],reset_interval_minutes=game_settings["reset_interval"])
     #Trả về cho JS xử lý
-    return jsonify({"success":True,"mode":mode,"max_attempts":max_attempts,"word_length":game.word_length,
-                    "attempts":0,"remaining_plays":remaining})
+    return jsonify({"success":True,
+                    "mode":mode,
+                    "max_attempts":max_attempts,
+                    "blind_mode":blind_mode,  
+                    "word_length":game.word_length,
+                    "attempts":0,
+                    "remaining_plays":remaining})
+
+
+
 
 @app.route("/api/guess",methods=["POST"])
 def make_guess():#THực hiện một lần đoán
@@ -129,12 +140,18 @@ def make_guess():#THực hiện một lần đoán
     if result.get("game_over"):
         response["target_word"]=result.get("target_word")
         response["time_elapsed"]=result.get("time_elapsed",0)
-        user_manager.add_game_result(username=username,
+        coins_earned = user_manager.add_game_result(
+            username=username,
             time_elapsed=result.get("time_elapsed",0),
             attempts=result.get("attempts",0),
             won=result.get("won",False),
             mode=game.mode
         )
+        
+        response["coins_earned"] = coins_earned
+        response["user_coins"] = user_manager.get_coins(username)
+        # =======================================
+        
         if username in active_games:
             del active_games[username]
         file_handler.delete_game_state(username)
@@ -219,13 +236,43 @@ def get_hint():
     username=session.get("username")
     if not username:
         return jsonify({"success":False,"message":"Chưa đăng nhập!"})
+    
     game=active_games.get(username)
     if not game:
         return jsonify({"success":False,"message":"Không có game đang chơi!"})
+    
+    # ========== CHECK COST TRƯỚC ==========
+    hint_number = len(game.hints_used)
+    cost = game.hint_costs.get(hint_number, 0)
+    
+    if cost > 0:
+        # Hint premium, cần check coins
+        user_coins = user_manager.get_coins(username)
+        if user_coins < cost:
+            return jsonify({
+                "success": False,
+                "message": f"Không đủ coins! Cần {cost} coins, bạn có {user_coins}",
+                "cost": cost,
+                "user_coins": user_coins
+            })
+    # ======================================
+    
     result=game.get_hint()
+    
     if result["success"]:
+        # ========== TRỪ COINS NẾU CẦN ==========
+        if cost > 0:
+            user_manager.spend_coins(username, cost)
+        # =======================================
+        
         state=game.get_state()
         file_handler.save_game_state(username,state)
+        
+        # Trả về coins hiện tại
+        current_coins = user_manager.get_coins(username)
+        result["user_coins"] = current_coins
+        result["cost"] = cost
+    
     return jsonify(result)
 #Xử lý khi thoát game ra
 @app.route("/api/quit_game",methods=["POST"])
@@ -273,7 +320,14 @@ def get_history():
         history=[]
         
     return jsonify({"success":True,"history":history})
-
+@app.route("/api/get_coins",methods=["GET"])
+def get_coins():
+    username=session.get("username")
+    if not username:
+        return jsonify({"success":False,"message":"Chưa đăng nhập!"})
+    
+    coins = user_manager.get_coins(username)
+    return jsonify({"success":True,"coins":coins})
 if __name__=="__main__":
     os.makedirs("data/game_states",exist_ok=True)
     if not os.path.exists("data/accounts.dat"):

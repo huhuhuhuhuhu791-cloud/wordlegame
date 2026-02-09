@@ -6,7 +6,18 @@ let elapsedSeconds=0;
 let currentRow=0;
 let currentCol=0;
 let currentWord="";
+let userCoins=0;  
 //Các hàm core chính
+function updateCoinsDisplay(coins){
+    userCoins = coins;
+    let display = document.getElementById("coinsDisplay");
+    if(display){
+        display.textContent = coins;
+        // Animation nhấp nháy
+        display.style.animation = "coinBounce 0.5s";
+        setTimeout(() => display.style.animation = "", 500);
+    }
+}
 function isValidKey(key,mode){//Xử lý phải valid Key không
     if(!key||key.length!==1)
         return false;
@@ -30,12 +41,21 @@ function calcCellSize(len){//Tính toán kích thước 1 ô là bao nhiêu
     if(size<28)size=28;
     return size;
 }
-function showScreen(id){//Show màn hình khi click vào cái mới
+function showScreen(id){
     document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
     let screen=document.getElementById(id);
-
     if(screen)screen.classList.add("active");
-
+    
+    // ========== CẬP NHẬT COINS Ở MENU ==========
+    if(id === "menuScreen"){
+        updateCoins();
+        let menuDisplay = document.getElementById("menuCoinsDisplay");
+        if(menuDisplay){
+            menuDisplay.textContent = userCoins;
+        }
+    }
+    // ===========================================
+    
     if(id==="gameScreen"){
         setTimeout(()=>document.getElementById("gameScreen").focus(),100);
     }
@@ -90,6 +110,17 @@ function switchKeyboard(mode){
         if(math)math.style.display="none";
     }
 }
+async function updateCoins(){
+    let res=await fetch("/api/get_coins");
+    let data=await res.json();
+    if(data.success){
+        userCoins=data.coins;
+        let display=document.getElementById("coinsDisplay");
+        if(display){
+            display.textContent=userCoins;
+        }
+    }
+}
 //Xử lý login (gọi về backend)
 async function login(){
     let username=document.getElementById("loginUsername").value.trim();
@@ -102,6 +133,7 @@ async function login(){
     let data=await res.json();
     if(data.success){
         currentUser=data.username;
+        await updateCoins()
         document.getElementById("playerName").textContent=currentUser;
         let resumeBtn=document.getElementById("resumeBtn");
 
@@ -136,6 +168,7 @@ async function register(){
     let data=await res.json();
     if(data.success){
         currentUser=data.username;
+        await updateCoins()
         document.getElementById("playerName").textContent=currentUser;
         document.getElementById("resumeBtn").style.display="none";
         showScreen("menuScreen");

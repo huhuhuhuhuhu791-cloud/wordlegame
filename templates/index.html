@@ -53,6 +53,11 @@
 
         <div id="menuScreen" class="screen">
             <h2>Chào mừng, <span id="playerName"></span>!</h2>
+            <div class="coins-banner">
+                <span class="coins-icon">💰</span>
+                <span class="coins-amount" id="menuCoinsDisplay">0</span>
+                <span class="coins-label">COINS</span>
+            </div>
             <div class="menu-buttons">
                 <button onclick="showNewGameOptions()" class="btn-primary">Game mới</button>
                 <button onclick="resumeGame()" class="btn-warning" id="resumeBtn" style="display: none;">Tiếp tục game</button>
@@ -118,6 +123,16 @@
                     <option value="8">8 lượt (Dễ)</option>
                 </select>
             </div>
+            <div class="form-group blind-mode-option">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="blindMode" style="width: auto; cursor: pointer;">
+                    <span>🙈 <strong>BLIND MODE - Đoán mù</strong></span>
+                </label>
+                <p class="blind-mode-desc">
+                    Không thấy màu sắc kết quả cho đến khi game kết thúc! 
+                    Thử thách cực khó - chỉ dành cho cao thủ! 💪
+                </p>
+            </div>
    
             <div class="btn-group">
                 <button onclick="startNewGame()" class="btn-primary">Bắt đầu</button>
@@ -144,10 +159,22 @@
                     <div class="stat-label">Chế độ</div>
                 </div>
                 <div class="stat">
+                    <div class="stat-value" id="coinsDisplay">0</div>
+                    <div class="stat-label">💰 Coins</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value blind-mode-indicator" id="blindIndicator" style="display:none;">
+                        🙈
+                    </div>
+                    <div class="stat-label">Đoán mù</div>
+                </div>
+                <div class="stat">
                     <div class="stat-value" id="hintsDisplay"> 3</div>
                     <div class="stat-label">Gợi ý</div>
                 </div>
+                
             </div>
+            
 
             <div id="gameBoard" class="game-board"></div>
 

@@ -319,6 +319,55 @@ table tr:hover {
 .hidden {
     display: none !important;
 }
+/* ========== COINS SYSTEM ========== */
+
+.coins-banner {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    padding: 15px 20px;
+    border-radius: 15px;
+    margin: 15px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+}
+
+.coins-icon {
+    font-size: 32px;
+    animation: coinSpin 2s infinite;
+}
+
+.coins-amount {
+    font-size: 36px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.coins-label {
+    font-size: 14px;
+    color: white;
+    opacity: 0.9;
+}
+
+@keyframes coinSpin {
+    0%, 100% { transform: rotateY(0deg); }
+    50% { transform: rotateY(180deg); }
+}
+
+@keyframes coinBounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+/* Coins trong game header */
+#coinsDisplay {
+    color: #f5576c;
+    font-weight: bold;
+}
+
+/* ================================== */
 @media (max-width: 480px) {
     .container {
         padding: 15px;

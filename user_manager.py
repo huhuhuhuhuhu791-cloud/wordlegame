@@ -29,6 +29,7 @@ class GameRecord:##Lưu lịch sử
         self.mode=mode
         self.timestamp=datetime.now().isoformat()
         self.date=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.coins=0
 #Lớp quản Lý user
 class UserManager:
     
@@ -97,6 +98,7 @@ class UserManager:
                     user.best_time=user_data.get('best_time',None)
                     user.created_at=user_data.get('created_at',datetime.now().isoformat())
                     user.last_played=user_data.get('last_played',None)
+                    user.coins=user_data.get('coins',0)
                     for game_data in user_data.get("games",[]):
                         game=GameRecord(game_data["time"],game_data["attempts"],game_data["won"],game_data["mode"])
                         game.timestamp=game_data["timestamp"]
@@ -133,7 +135,9 @@ class UserManager:
                     "last_played":user.last_played,
                     "plays_today":user.plays_today,
                     "last_play_date":user.last_play_date,
+                    "coins":user.coins,
                     "next_reset_time":user.next_reset_time
+                    
                 }
                 current=current.next
         #Ghi tất cả file đó lại dưới dạng binary = pickle
@@ -156,15 +160,33 @@ class UserManager:
         user.games.append(game_record)
         user.total_games+=1
         user.last_played=datetime.now().isoformat()
+        coins_earned = 0
         if won:
             user.total_wins+=1
             user.total_time+=time_elapsed
             user.avg_time=user.total_time/user.total_wins
             if user.best_time is None or time_elapsed<user.best_time:
                 user.best_time=time_elapsed
+            
+            # Tặng coins khi thắng!
+            coins_earned = 10  # Base reward
+            
+            # Bonus: Thắng nhanh
+            if time_elapsed < 60:
+                coins_earned += 5
+            
+            # Bonus: Ít lượt
+            if attempts <= 3:
+                coins_earned += 5
+            
+            # Bonus: Math mode khó hơn
+            if mode == "math":
+                coins_earned += 3
+            
+            user.coins += coins_earned
         #Lưu thông tin user lại
         self._save_users()
-        return True
+        return coins_earned 
     #Lấy top20 dùng list Python thay vì DynamicArray
     def get_top20(self):
         players=[]  # Dùng list Python thay vì DynamicArray
@@ -222,3 +244,25 @@ class UserManager:
             index+=1
         history.reverse() #Đảo ngược
         return history
+    def add_coins(self, username, amount):
+ 
+        user = self.users.get(username)
+        if not user:
+            return False
+        user.coins += amount
+        self._save_users()
+        return True
+    def spend_coins(self, username, amount):
+        user = self.users.get(username)
+        if not user:
+            return False
+        if user.coins < amount:
+            user.coins -= amount
+        self._save_users()
+        return True
+    def get_coins(self, username):
+        user = self.users.get(username)
+        if not user:
+            return 0
+        return user.coins
+    

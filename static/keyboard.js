@@ -71,32 +71,41 @@ function deleteKey(){
 //xửu lý cập nhật các màu cell
 function updateKeyboardColors(usedLetters){
     if(!usedLetters)return;
+    
+    // Xóa hết màu
     document.querySelectorAll(".key").forEach(k=>k.classList.remove("cell-correct","cell-present","cell-absent"));
+    
+    // CHỈ HIỆN MÀU KHI KHÔNG Ở BLIND MODE HOẶC GAME KẾT THÚC
+    if(currentGame && currentGame.blind_mode && !currentGame.game_over){
+        return; // <-- Không update màu keyboard trong blind mode
+    }
+    
+    // Phần còn lại giữ nguyên
     usedLetters.correct.forEach(letter=>{
         document.querySelectorAll(".key").forEach(btn=>{
             if(btn.textContent===letter){
-
                 btn.classList.add("cell-correct");
             }
-        });//Xóa hết màu của cái cell
+        });
     });
     usedLetters.present.forEach(letter=>{
         document.querySelectorAll(".key").forEach(btn=>{
             if(btn.textContent===letter&&!btn.classList.contains("cell-correct")){
-
                 btn.classList.add("cell-present");
             }
         });
-    });//Cập nhật lại trạng thái mới
+    });
     usedLetters.absent.forEach(letter=>{
         document.querySelectorAll(".key").forEach(btn=>{
             if(btn.textContent===letter&&!btn.classList.contains("cell-correct")&&!btn.classList.contains("cell-present")){
-
                 btn.classList.add("cell-absent");
             }
         });
     });
 }
+
+
+
 // xử lý các phím kích chuột và Login--register
 document.addEventListener("DOMContentLoaded",()=>{
     //Xử lý login

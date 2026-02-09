@@ -124,7 +124,7 @@ def _generate_math_pool():
 _MATH_POOL=_generate_math_pool()
 #Các CoreGame
 class WordleGame:
-    def __init__(self,mode="english",max_attempts=6):
+    def __init__(self,mode="english",max_attempts=6,blind_mode=False):
         self.mode=mode
         self.max_attempts=max_attempts
         self.attempts=0
@@ -146,6 +146,15 @@ class WordleGame:
         self.max_undo_redo=3
         self.undo_count=0
         self.redo_count=0
+        self.blind_mode=blind_mode
+        self.hint_costs = {
+        0: 0,   # Hint 1: Free
+        1: 0,   # Hint 2: Free
+        2: 0,   # Hint 3: Free
+        3: 5,   # Hint 4: 5 coins
+        4: 8,   # Hint 5: 8 coins
+        5: 12   # Hint 6: 12 coins
+    }
     def _get_random_word(self):
         if self.mode=="english":
             with open("data/words/english.txt","r",encoding="utf-8") as f:
@@ -164,32 +173,79 @@ class WordleGame:
     def get_hint(self):
         if self.hints_remaining<=0:
             return{"success":False,"message":"Bạn đã hết lượt gợi ý","hints_remaining":0}
+        
         if self.game_over:
             return{"success":False,"message":"Game đã kết thúc","hints_remaining":self.hints_remaining}
+        
         hint_type=len(self.hints_used)
         hint_text=""
+        cost = self.hint_costs.get(hint_type, 0)
+        
+        # ========== CÁC LOẠI HINT ==========
         if self.mode=="math":
             if hint_type==0:
-                hint_text=f" Chữ số đầu tiên là:{self.target_word[0]}"
+                hint_text=f"💡 Chữ số đầu tiên: {self.target_word[0]}"
             elif hint_type==1:
-                hint_text=f" Chữ số cuối cùng là:{self.target_word[-1]}"
+                hint_text=f"💡 Chữ số cuối cùng: {self.target_word[-1]}"
             elif hint_type==2:
                 total=sum(int(d) for d in self.target_word if d.isdigit())
-                hint_text=f"Tổng các chữ số={total}"
+                hint_text=f"💡 Tổng các chữ số = {total}"
+            elif hint_type==3:
+                # Hint premium
+                hint_text=f"⭐ Phép tính có dấu: {'+' if '+' in self.target_word else '*' if '*' in self.target_word else '-' if '-' in self.target_word else '/'}"
+            elif hint_type==4:
+                # Hint xịn hơn
+                mid = len(self.target_word)//2
+                hint_text=f"🔥 Ký tự giữa: {self.target_word[mid]}"
+            elif hint_type==5:
+                # Hint siêu xịn - cho pattern
+                pattern = ""
+                for i, ch in enumerate(self.target_word):
+                    if i == 0 or i == len(self.target_word)-1 or i == len(self.target_word)//2:
+                        pattern += ch
+                    else:
+                        pattern += "?"
+                hint_text=f"🌟 Pattern: {pattern}"
         else:
             if hint_type==0:
-                hint_text=f"Chữ cái đầu tiên là:{self.target_word[0].upper()}"
+                hint_text=f"💡 Chữ cái đầu: {self.target_word[0].upper()}"
             elif hint_type==1:
-                hint_text=f"Chữ cái cuối cùng là:{self.target_word[-1].upper()}"
+                hint_text=f"💡 Chữ cái cuối: {self.target_word[-1].upper()}"
             elif hint_type==2:
                 mid_index=len(self.target_word)//2
-                hint_text=f"Chữ cái ở vị trí{mid_index+1}là:{self.target_word[mid_index].upper()}"
+                hint_text=f"💡 Chữ cái giữa: {self.target_word[mid_index].upper()}"
+            elif hint_type==3:
+                # Hint premium: Số nguyên âm
+                vowels = sum(1 for ch in self.target_word if ch.upper() in 'AEIOU')
+                hint_text=f"⭐ Từ có {vowels} nguyên âm"
+            elif hint_type==4:
+                # Hint xịn: Loại trừ chữ cái
+                all_letters = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+                word_letters = set(self.target_word.upper())
+                wrong_letters = list(all_letters - word_letters)[:5]
+                hint_text=f"🔥 Không có các chữ: {', '.join(wrong_letters)}"
+            elif hint_type==5:
+                # Hint siêu xịn: Pattern
+                pattern = ""
+                for i, ch in enumerate(self.target_word):
+                    if i == 0 or i == len(self.target_word)-1:
+                        pattern += ch.upper()
+                    else:
+                        pattern += "?"
+                hint_text=f"🌟 Pattern: {pattern}"
+        # ===================================
+        
         self.hints_used.append(hint_text)
         self.hints_remaining-=1
-        return{"success":True,
-               "message":"Đây là gợi ý của bạn!","hint_text":hint_text,
-               "hints_remaining":self.hints_remaining,
-               "hint_number":len(self.hints_used)}
+        
+        return {
+            "success": True,
+            "message": "Đây là gợi ý của bạn!",
+            "hint_text": hint_text,
+            "hints_remaining": self.hints_remaining,
+            "hint_number": len(self.hints_used),
+            "cost": cost  # ← THÊM COST
+        }
     def is_valid_word(self,word):
         word=word.upper()
         if len(word)!=self.word_length:
@@ -266,6 +322,7 @@ class WordleGame:
         r.set("used_letters",self._used_letters_to_dict())
         r.set("can_undo",not self.undo_stack.is_empty())
         r.set("can_redo",not self.redo_stack.is_empty())
+        r.set("blind_mode",self.blind_mode)
         return r
     def _check_word(self,word):
         n=self.word_length
@@ -427,6 +484,7 @@ class WordleGame:
                "time_elapsed":self.time_elapsed,
                "undo_count":self.undo_count,
                 "hints_remaining":self.hints_remaining,
+                "blind_mode":self.blind_mode,
                "redo_count":self.redo_count}
     @classmethod
     def from_state(cls,state):
@@ -440,6 +498,7 @@ class WordleGame:
         game.game_over=state["game_over"]
         game.won=state["won"]
         game.time_elapsed=state.get("time_elapsed",0)
+        game.blind_mode=state.get("blind_mode",False)
         game.guesses=LinkedList()
         for g in state["guesses"]:
             gd=HashMap()

@@ -147,14 +147,22 @@ class WordleGame:
         self.undo_count=0
         self.redo_count=0
         self.blind_mode=blind_mode
+        
+        # ========== CHI PHÍ HINT ==========
         self.hint_costs = {
-        0: 0,   # Hint 1: Free
-        1: 0,   # Hint 2: Free
-        2: 0,   # Hint 3: Free
-        3: 5,   # Hint 4: 5 coins
-        4: 8,   # Hint 5: 8 coins
-        5: 12   # Hint 6: 12 coins
-    }
+            0: 2,   # Hint 1: 2 coins
+            1: 3,   # Hint 2: 3 coins
+            2: 4,   # Hint 3: 4 coins
+            3: 5,   # Hint 4: 5 coins
+            4: 8,   # Hint 5: 8 coins
+            5: 12   # Hint 6: 12 coins
+        }
+        
+        # ========== CHI PHÍ UNDO/REDO ==========
+        self.undo_cost = 3   # Mỗi lần undo tốn 3 coins
+        self.redo_cost = 3   # Mỗi lần redo tốn 3 coins
+        # ======================================
+        
     def _get_random_word(self):
         if self.mode=="english":
             with open("data/words/english.txt","r",encoding="utf-8") as f:
@@ -244,7 +252,7 @@ class WordleGame:
             "hint_text": hint_text,
             "hints_remaining": self.hints_remaining,
             "hint_number": len(self.hints_used),
-            "cost": cost  # ← THÊM COST
+            "cost": cost
         }
     def is_valid_word(self,word):
         word=word.upper()
@@ -398,6 +406,7 @@ class WordleGame:
         r.set("can_redo",not self.redo_stack.is_empty() and self.redo_count<self.max_undo_redo)
         r.set("undo_remaining",self.max_undo_redo-self.undo_count)
         r.set("redo_remaining",self.max_undo_redo-self.redo_count)
+        r.set("cost",self.undo_cost)  # ← THÊM COST
         return r
     def redo(self):
         if self.redo_stack.is_empty():
@@ -441,6 +450,7 @@ class WordleGame:
         r.set("can_redo",not self.redo_stack.is_empty() and self.redo_count<self.max_undo_redo)
         r.set("undo_remaining",self.max_undo_redo-self.undo_count)
         r.set("redo_remaining",self.max_undo_redo-self.redo_count)
+        r.set("cost",self.redo_cost)  # ← THÊM COST
         return r
     def _clone_guesses(self):
         new=LinkedList()
@@ -520,4 +530,7 @@ class WordleGame:
         game.redo_count=state.get("redo_count",0)
         game.hints_remaining=state.get("hints_remaining",3)
         game.hints_used=state.get("hints_used",[])
+        # Khởi tạo cost
+        game.undo_cost = 3
+        game.redo_cost = 3
         return game

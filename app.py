@@ -175,6 +175,7 @@ def discard_game():
     file_handler.delete_game_state(username)
     
     return jsonify({"success":True,"message":"Đã hủy và không lưu game!"})
+
 #APi xử lý undo
 @app.route("/api/undo",methods=["POST"])
 def undo():
@@ -185,17 +186,51 @@ def undo():
     
     if not game:
         return jsonify({"success":False,"message":"Không có game nào đang chơi!"})
+    
+    # ========== CHECK COST TRƯỚC ==========
+    cost = game.undo_cost
+    user_coins = user_manager.get_coins(username)
+    
+    if user_coins < cost:
+        return jsonify({
+            "success": False,
+            "message": f"Không đủ coins! Cần {cost} coins, bạn có {user_coins}",
+            "cost": cost,
+            "user_coins": user_coins
+        })
+    # ======================================
+    
     result=game.undo()
-    #Lưu game vừa tạo và trả về
-    file_handler.save_game_state(username,game.get_state())
-    return jsonify({"success":result.get("success",False),
-        "message":result.get("message",""),
-        "attempts":result.get("attempts",0),
-        "guesses":result.get("guesses",[]),
-        "used_letters":result.get("used_letters",{"correct":[],"present":[],"absent":[]}),
-        "can_undo":result.get("can_undo",False),
-        "can_redo":result.get("can_redo",False)
-    })
+    
+    if result.get("success",False):
+        # ========== TRỪ COINS ==========
+        user_manager.spend_coins(username, cost)
+        # ===============================
+        
+        #Lưu game vừa tạo và trả về
+        file_handler.save_game_state(username,game.get_state())
+        
+        # Cập nhật coins hiện tại
+        current_coins = user_manager.get_coins(username)
+        
+        return jsonify({
+            "success": True,
+            "message": result.get("message",""),
+            "attempts": result.get("attempts",0),
+            "guesses": result.get("guesses",[]),
+            "used_letters": result.get("used_letters",{"correct":[],"present":[],"absent":[]}),
+            "can_undo": result.get("can_undo",False),
+            "can_redo": result.get("can_redo",False),
+            "cost": cost,
+            "user_coins": current_coins
+        })
+    else:
+        return jsonify({
+            "success": False,
+            "message": result.get("message",""),
+            "cost": cost
+        })
+
 #reDO
 @app.route("/api/redo",methods=["POST"])
 def redo():
@@ -205,17 +240,52 @@ def redo():
     game=active_games.get(username)
     if not game:
         return jsonify({"success":False,"message":"Không có game nào đang chơi!"})
+    
+    # ========== CHECK COST TRƯỚC ==========
+    cost = game.redo_cost
+    user_coins = user_manager.get_coins(username)
+    
+    if user_coins < cost:
+        return jsonify({
+            "success": False,
+            "message": f"Không đủ coins! Cần {cost} coins, bạn có {user_coins}",
+            "cost": cost,
+            "user_coins": user_coins
+        })
+    # ======================================
+    
     result=game.redo()
-    file_handler.save_game_state(username,game.get_state())
-    return jsonify({"success":result.get("success",False),"message":result.get("message",""),
-        "attempts":result.get("attempts",0),
-        "guesses":result.get("guesses",[]),
-        "used_letters":result.get("used_letters",{"correct":[],"present":[],"absent":[]}),
-        "game_over":result.get("game_over",False),
-        "won":result.get("won",False),
-        "can_undo":result.get("can_undo",False),
-        "can_redo":result.get("can_redo",False)
-    })
+    
+    if result.get("success",False):
+        # ========== TRỪ COINS ==========
+        user_manager.spend_coins(username, cost)
+        # ===============================
+        
+        file_handler.save_game_state(username,game.get_state())
+        
+        # Cập nhật coins hiện tại
+        current_coins = user_manager.get_coins(username)
+        
+        return jsonify({
+            "success": True,
+            "message": result.get("message",""),
+            "attempts": result.get("attempts",0),
+            "guesses": result.get("guesses",[]),
+            "used_letters": result.get("used_letters",{"correct":[],"present":[],"absent":[]}),
+            "game_over": result.get("game_over",False),
+            "won": result.get("won",False),
+            "can_undo": result.get("can_undo",False),
+            "can_redo": result.get("can_redo",False),
+            "cost": cost,
+            "user_coins": current_coins
+        })
+    else:
+        return jsonify({
+            "success": False,
+            "message": result.get("message",""),
+            "cost": cost
+        })
+
 #API xử lý khi nhấp vào resume
 @app.route("/api/resume_game",methods=["POST"])
 def resume_game():
@@ -245,25 +315,23 @@ def get_hint():
     hint_number = len(game.hints_used)
     cost = game.hint_costs.get(hint_number, 0)
     
-    if cost > 0:
-        # Hint premium, cần check coins
-        user_coins = user_manager.get_coins(username)
-        if user_coins < cost:
-            return jsonify({
-                "success": False,
-                "message": f"Không đủ coins! Cần {cost} coins, bạn có {user_coins}",
-                "cost": cost,
-                "user_coins": user_coins
-            })
+    # TẤT CẢ HINT ĐỀU TỐN COINS - luôn check
+    user_coins = user_manager.get_coins(username)
+    if user_coins < cost:
+        return jsonify({
+            "success": False,
+            "message": f"Không đủ coins! Cần {cost} coins, bạn có {user_coins}",
+            "cost": cost,
+            "user_coins": user_coins
+        })
     # ======================================
     
     result=game.get_hint()
     
     if result["success"]:
-        # ========== TRỪ COINS NẾU CẦN ==========
-        if cost > 0:
-            user_manager.spend_coins(username, cost)
-        # =======================================
+        # ========== TRỪ COINS (TẤT CẢ HINT ĐỀU TỐN) ==========
+        user_manager.spend_coins(username, cost)
+        # ===================================================
         
         state=game.get_state()
         file_handler.save_game_state(username,state)
@@ -334,4 +402,3 @@ if __name__=="__main__":
         accounts=LinkedList()
         file_handler.save_accounts(accounts)
     app.run(debug=True,host="0.0.0.0",port=5000)
- 

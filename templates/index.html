@@ -69,15 +69,17 @@
         </div>
 
         <div id="settingsScreen" class="screen">
-            <h2>⚙️ Cài đặt Game</h2>
-            
+            <h2>Cài đặt Game</h2>
+        
             <div class="form-group">
                 <label>
                     <input type="checkbox" id="unlimitedPlay" onchange="toggleUnlimited()"> 
                     Cho phép chơi vô hạn
                 </label>
             </div>
-            
+    
+
+        
             <div id="limitSettings" style="display:none;">
                 <div class="form-group">
                     <label>Số lượt chơi tối đa:</label>
@@ -88,7 +90,6 @@
                     <label>Chế độ reset:</label>
                     <select id="resetMode" onchange="toggleResetOptions()">
                         <option value="daily">Reset lúc 0:00 hàng ngày</option>
-                        <option value="interval">Reset sau khoảng thời gian</option>
                         <option value="never">Không reset</option>
                     </select>
                 </div>
@@ -130,7 +131,7 @@
                 </label>
                 <p class="blind-mode-desc">
                     Không thấy màu sắc kết quả cho đến khi game kết thúc! 
-                    Thử thách cực khó - chỉ dành cho cao thủ! 💪
+ 
                 </p>
             </div>
    

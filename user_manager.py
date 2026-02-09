@@ -19,6 +19,7 @@ class User:
         self.plays_today=0
         self.last_play_date=None
         self.next_reset_time=None
+        self.coins=0  # Thêm coins mặc định
         
 class GameRecord:##Lưu lịch sử
     def __init__(self,time,attempts,won,mode):
@@ -244,25 +245,28 @@ class UserManager:
             index+=1
         history.reverse() #Đảo ngược
         return history
+    
     def add_coins(self, username, amount):
- 
         user = self.users.get(username)
         if not user:
             return False
         user.coins += amount
         self._save_users()
         return True
+    
     def spend_coins(self, username, amount):
+        """Trừ coins của user - CHỈ TRỪ KHI ĐỦ COINS"""
         user = self.users.get(username)
         if not user:
             return False
         if user.coins < amount:
-            user.coins -= amount
+            return False  # Không đủ coins, không trừ
+        user.coins -= amount  # Đủ coins thì mới trừ
         self._save_users()
         return True
+    
     def get_coins(self, username):
         user = self.users.get(username)
         if not user:
             return 0
         return user.coins
-    

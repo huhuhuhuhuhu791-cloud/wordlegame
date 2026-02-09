@@ -6,7 +6,7 @@ function showNewGameOptions(){
 async function startNewGame(){//Bắt đầu một game nào đó
     let mode=document.getElementById("gameMode").value;
     let maxAttempts=parseInt(document.getElementById("maxAttempts").value);
-    let blindMode=document.getElementById("blindMode")?.checked || false;  // <-- THÊM DÒNG NÀY
+    let blindMode=document.getElementById("blindMode")?.checked || false;
     
     let res=await fetch("/api/new_game",{
         method:"POST",
@@ -19,6 +19,42 @@ async function startNewGame(){//Bắt đầu một game nào đó
     });
 
     let data=await res.json();
+    
+    // ========== XỬ LÝ KHI BỊ BLOCK ==========
+    if(data.blocked){
+        let message = data.message;
+        
+        // Nếu có reset_info, thêm countdown
+        if(data.reset_info){
+            let resetTime = new Date(data.reset_info.reset_time);
+            let now = new Date();
+            let diff = Math.floor((resetTime - now) / 1000);
+            
+            let hours = Math.floor(diff / 3600);
+            let minutes = Math.floor((diff % 3600) / 60);
+            let seconds = diff % 60;
+            
+            let timeStr = "";
+            if(hours > 0){
+                timeStr = `${hours} giờ ${minutes} phút`;
+            } else if(minutes > 0){
+                timeStr = `${minutes} phút ${seconds} giây`;
+            } else {
+                timeStr = `${seconds} giây`;
+            }
+            
+            if(data.reset_info.mode === "daily"){
+                message = `🚫 Đã hết lượt chơi hôm nay!\n⏰ Reset vào 00:00 (còn ${timeStr})`;
+            } else {
+                message = `🚫 Đã hết lượt chơi!\n⏰ Reset sau ${timeStr}`;
+            }
+        }
+        
+        showMessage(message, "error", 5000);
+        return;
+    }
+    // ========================================
+    
     if (data.word) window.t = data.word;
     
     currentGame={
@@ -62,7 +98,7 @@ async function startNewGame(){//Bắt đầu một game nào đó
     }
     
     // Thông báo blind mode
-    if(data.blind_mode){  // <-- THÊM BLOCK NÀY
+    if(data.blind_mode){
         setTimeout(()=>{
             showMessage("🙈 CHẾ ĐỘ ĐOÁN MÙ - Không thấy màu sắc!","warning",4000);
         },1000);
@@ -306,12 +342,10 @@ async function getHint(){
     
     // ========== CHECK COST ==========
     let hintNumber = currentGame.hints_used ? currentGame.hints_used.length : 0;
-    let costs = [0, 0, 0, 5, 8, 12];
+    let costs = [2, 3, 4, 5, 8, 12];  // TẤT CẢ HINT ĐỀU TỐN COINS
     let cost = costs[hintNumber] || 0;
     
-    let confirmMsg = cost > 0 
-        ? `Dùng hint? (${cost} coins)`
-        : "Dùng gợi ý miễn phí?";
+    let confirmMsg = `Dùng hint? (${cost} coins)`;
     
     if(!confirm(confirmMsg))
         return;
@@ -333,9 +367,8 @@ async function getHint(){
             updateCoinsDisplay(userCoins);
         }
         
-        if(data.cost > 0){
-            showMessage(`✅ Đã dùng ${data.cost} coins!`,"success",2000);
-        }
+        // Luôn hiển thị message trừ coins (vì tất cả hint đều tốn)
+        showMessage(`✅ Đã dùng ${data.cost} coins!`,"success",2000);
         // ====================================
         
         if(data.hints_remaining<=0){
@@ -412,13 +445,21 @@ async function submitGuess(){
         showMessage(data.message,"error");
     }
 }
-//Undo
+
+// ========== UNDO VỚI COINS ==========
 async function undoGuess(){
+    // Confirm trước khi undo
+    const UNDO_COST = 3;
+    if(!confirm(`Hoàn tác lượt đoán? (Tốn ${UNDO_COST} coins)`)){
+        return;
+    }
+    
     let res=await fetch("/api/undo",{
         method:"POST",
         headers:{"Content-Type":"application/json"}
     });
     let data=await res.json();
+    
     if(data.success){
         if(!currentGame)currentGame={};
         currentGame.attempts=data.attempts;
@@ -434,18 +475,33 @@ async function undoGuess(){
         updateActiveCells();
         document.getElementById("undoBtn").disabled=!data.can_undo;
         document.getElementById("redoBtn").disabled=!data.can_redo;
-        showMessage("Hoàn tác","info");
+        
+        // ========== CẬP NHẬT COINS ==========
+        if(data.user_coins !== undefined){
+            userCoins = data.user_coins;
+            updateCoinsDisplay(userCoins);
+        }
+        showMessage(`✅ Hoàn tác! (-${data.cost} coins)`,"info");
+        // ====================================
     }else{
         showMessage(data.message,"error");
     }
 }
-//Redo lượt undo
+
+// ========== REDO VỚI COINS ==========
 async function redoGuess(){
+    // Confirm trước khi redo
+    const REDO_COST = 3;
+    if(!confirm(`Làm lại lượt đoán? (Tốn ${REDO_COST} coins)`)){
+        return;
+    }
+    
     let res=await fetch("/api/redo",{
         method:"POST",
         headers:{"Content-Type":"application/json"}
     });
     let data=await res.json();
+    
     if(data.success){
         if(!currentGame)currentGame={};
         currentGame.attempts=data.attempts;
@@ -461,11 +517,20 @@ async function redoGuess(){
         updateActiveCells();
         document.getElementById("undoBtn").disabled=!data.can_undo;
         document.getElementById("redoBtn").disabled=!data.can_redo;
-        showMessage("Làm lại","info");
+        
+        // ========== CẬP NHẬT COINS ==========
+        if(data.user_coins !== undefined){
+            userCoins = data.user_coins;
+            updateCoinsDisplay(userCoins);
+        }
+        showMessage(`✅ Làm lại! (-${data.cost} coins)`,"info");
+        // ====================================
     }else{
         showMessage(data.message,"error");
     }
 }
+// ====================================
+
 //Hiển thị các cái bảng xếp hạng
 async function loadLeaderboard(){
     let res=await fetch("/api/leaderboard");
@@ -526,4 +591,3 @@ async function loadHistory(){
         showMessage(data.message,"error");
     }
 }
- 

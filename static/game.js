@@ -178,6 +178,11 @@ async function backToMenu(){
             if(resumeBtn)resumeBtn.style.display="none";
         }
     }
+    
+    // ========== CẬP NHẬT COINS TRƯỚC KHI CHUYỂN MÀN HÌNH ==========
+    await updateCoins();
+    // ==============================================================
+    
     //CHuyển về menu
     showScreen("menuScreen");
 }
@@ -198,12 +203,27 @@ async function updateCoins(){
     let data=await res.json();
     if(data.success){
         userCoins=data.coins;
-        let display=document.getElementById("coinsDisplay");
-        if(display){
-            display.textContent=userCoins;
-        }
+        updateCoinsDisplay(userCoins);
     }
 }
+
+// Hàm cập nhật hiển thị coins (cả trong game và menu)
+function updateCoinsDisplay(coins){
+    userCoins = coins;
+    
+    // Cập nhật trong game screen
+    let gameDisplay = document.getElementById("coinsDisplay");
+    if(gameDisplay){
+        gameDisplay.textContent = coins;
+    }
+    
+    // Cập nhật trong menu screen
+    let menuDisplay = document.getElementById("menuCoinsDisplay");
+    if(menuDisplay){
+        menuDisplay.textContent = coins;
+    }
+}
+
 function updateBlindModeDisplay(isBlind){
     let indicator=document.getElementById("blindIndicator");
     if(indicator){
@@ -401,29 +421,49 @@ async function submitGuess(){
         updateActiveCells();
         document.getElementById("undoBtn").disabled=!data.can_undo;
         document.getElementById("redoBtn").disabled=!data.can_redo;
+        
         //Nếu game kết thúc
         if(data.game_over){
             stopTimer();
+            currentGame.game_over = true;  // ← Đánh dấu game đã kết thúc
             
             if(data.won){
-                let msg = ` Thắng trong ${data.time_elapsed.toFixed(2)}s`;
+                let msg = `🎉 Thắng trong ${data.time_elapsed.toFixed(2)}s`;
                 
                 if(data.coins_earned > 0){
-                    msg += `\n +${data.coins_earned} coins!`;
+                    msg += `\n💰 +${data.coins_earned} coins!`;
                 }
                 if(data.user_coins !== undefined){
                     userCoins = data.user_coins;
                     updateCoinsDisplay(userCoins);
                 }
                 
-                showMessage(msg,"success");
+                showMessage(msg,"success", 5000);
+                
+                // ========== HIỆN MÀU SAU KHI THẮNG (BLIND MODE) ==========
+                if(currentGame.blind_mode){
+                    // Refresh lại tất cả cells để hiện màu
+                    currentGame.guesses.forEach((g,i)=>displayGuess(i,g.word,g.result));
+                    updateKeyboardColors(currentGame.used_letters);
+                }
+                // =========================================================
             }else{
-                showMessage("Thua! Đáp án: "+data.target_word,"error");
+                showMessage("😢 Thua! Đáp án: "+data.target_word,"error", 5000);
+                
+                // ========== HIỆN MÀU SAU KHI THUA (BLIND MODE) ==========
+                if(currentGame.blind_mode){
+                    currentGame.guesses.forEach((g,i)=>displayGuess(i,g.word,g.result));
+                    updateKeyboardColors(currentGame.used_letters);
+                }
+                // =========================================================
             }
             
-            setTimeout(()=>{
+            // ========== SỬA: GIẢM THỜI GIAN CHỜ XUỐNG 3 GIÂY ==========
+            setTimeout(async ()=>{
+                await updateCoins();  // Cập nhật coins trước khi chuyển màn
                 showScreen("menuScreen");
-            },10000);
+            },3000);  // ← 3 giây thay vì 10 giây
+            // ===========================================================
         }
     }else{
         showMessage(data.message,"error");

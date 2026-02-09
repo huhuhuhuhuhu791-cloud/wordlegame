@@ -1,6 +1,7 @@
 from datetime import datetime
-from data_structures import LinkedList,Stack,HashMap
+from data_structures import LinkedList,Stack  # Bỏ HashMap
 import random
+
 #xử lý biểu thức toán học
 def _precedence(op):
     if op in("+","-"):
@@ -8,8 +9,10 @@ def _precedence(op):
     if op in("*","/"):
         return 2
     return 0
+    
 def _is_operator(ch):
     return ch in("+","-","*","/")
+    
 def infix_to_postfix(tokens):
     output=[]
     op_stack=Stack()
@@ -34,6 +37,7 @@ def infix_to_postfix(tokens):
     while not op_stack.is_empty():
         output.append(op_stack.pop())
     return output
+    
 def eval_postfix(postfix_tokens):
     eval_stack=Stack()
     for token in postfix_tokens:
@@ -61,6 +65,7 @@ def eval_postfix(postfix_tokens):
     if eval_stack.size()!=1:
         raise ValueError("Biểu thức không hợp lệ")
     return eval_stack.pop()
+    
 def tokenize_expr(expr_str):
     tokens=[]
     i=0
@@ -80,6 +85,7 @@ def tokenize_expr(expr_str):
         else:
             raise ValueError(f"Ký tự không hợp lệ:{ch}")
     return tokens
+    
 def validate_and_eval_math(expression_str):
     if "=" not in expression_str:
         return False,None
@@ -96,6 +102,7 @@ def validate_and_eval_math(expression_str):
         return computed==int(rhs),computed
     except Exception:
         return False,None
+        
 def _generate_math_pool():
     pool=[]
     ops=["+","-","*"]
@@ -121,7 +128,9 @@ def _generate_math_pool():
                             if len(pool)>=120:
                                 return pool
     return pool
+    
 _MATH_POOL=_generate_math_pool()
+
 #Các CoreGame
 class WordleGame:
     def __init__(self,mode="english",max_attempts=6,blind_mode=False):
@@ -131,10 +140,15 @@ class WordleGame:
         self.guesses=LinkedList()
         self.undo_stack=Stack()
         self.redo_stack=Stack()
-        self.used_letters=HashMap()
-        self.used_letters.set("correct",LinkedList())
-        self.used_letters.set("present",LinkedList())
-        self.used_letters.set("absent",LinkedList())
+        
+        # ========== THAY HASHMAP BẰNG DICT ==========
+        self.used_letters={
+            "correct": LinkedList(),
+            "present": LinkedList(),
+            "absent": LinkedList()
+        }
+        # ============================================
+        
         self.start_time=datetime.now()
         self.time_elapsed=0
         self.game_over=False
@@ -148,17 +162,16 @@ class WordleGame:
         self.redo_count=0
         self.blind_mode=blind_mode
         
-        # ========== CHI PHÍ HINT ==========
+        # CHI PHÍ HINT
         self.hint_costs = {
             0: 2,  
             1: 2,   
             2: 2,   
         }
         
-        # ========== CHI PHÍ UNDO/REDO ==========
-        self.undo_cost = 3   # Mỗi lần undo tốn 3 coins
-        self.redo_cost = 3   # Mỗi lần redo tốn 3 coins
-        # ======================================
+        # CHI PHÍ UNDO/REDO
+        self.undo_cost = 3
+        self.redo_cost = 3
         
     def _get_random_word(self):
         if self.mode=="english":
@@ -175,6 +188,7 @@ class WordleGame:
             arr=_MATH_POOL
             n=random.randint(0,len(arr))
             return arr[n]
+            
     def get_hint(self):
         if self.hints_remaining<=0:
             return{"success":False,"message":"Bạn đã hết lượt gợi ý","hints_remaining":0}
@@ -186,7 +200,7 @@ class WordleGame:
         hint_text=""
         cost = self.hint_costs.get(hint_type, 0)
         
-        # ========== CÁC LOẠI HINT ==========
+        # CÁC LOẠI HINT
         if self.mode=="math":
             if hint_type==0:
                 hint_text=f"Chữ số đầu tiên: {self.target_word[0]}"
@@ -215,6 +229,7 @@ class WordleGame:
             "hint_number": len(self.hints_used),
             "cost": cost
         }
+        
     def is_valid_word(self,word):
         word=word.upper()
         if len(word)!=self.word_length:
@@ -234,26 +249,36 @@ class WordleGame:
             if word in arr:
                 return True
             return False
+            
     def make_guess(self,word):
         word=word.upper()
         if self.game_over:
-            r=HashMap()
-            r.set("success",False)
-            r.set("message","Game đã kết thúc!")
-            r.set("game_over",True)
-            r.set("won",self.won)
-            return r
+            # ========== THAY HASHMAP BẰNG DICT ==========
+            return {
+                "success": False,
+                "message": "Game đã kết thúc!",
+                "game_over": True,
+                "won": self.won
+            }
+            # ============================================
+            
         if len(word)!=self.word_length:
-            r=HashMap()
-            r.set("success",False)
-            r.set("message",f"Cần{self.word_length} ký tự!")
-            r.set("game_over",False)
-            return r
+            return {
+                "success": False,
+                "message": f"Cần {self.word_length} ký tự!",
+                "game_over": False
+            }
+            
         result_array=self._check_word(word)
-        state=HashMap()
-        state.set("guesses_backup",self._clone_guesses())
-        state.set("attempts",self.attempts)
-        state.set("used_letters_backup",self._clone_used_letters())
+        
+        # ========== THAY HASHMAP BẰNG DICT ==========
+        state={
+            "guesses_backup": self._clone_guesses(),
+            "attempts": self.attempts,
+            "used_letters_backup": self._clone_used_letters()
+        }
+        # ============================================
+        
         self.undo_stack.push(state)
         if self.undo_stack.size()>self.max_undo_redo:
             temp_stack=Stack()
@@ -262,42 +287,54 @@ class WordleGame:
             self.undo_stack.clear()
             while not temp_stack.is_empty():
                 self.undo_stack.push(temp_stack.pop())
+                
         self.redo_stack.clear()
         self.redo_count=0
-        gd=HashMap()
-        gd.set("word",word)
-        gd.set("result",result_array)
-        gd.set("timestamp",datetime.now().isoformat())
-        self.guesses.append(gd)
+        
+        # ========== THAY HASHMAP BẰNG DICT ==========
+        guess_data={
+            "word": word,
+            "result": result_array,
+            "timestamp": datetime.now().isoformat()
+        }
+        # ============================================
+        
+        self.guesses.append(guess_data)
         self.attempts+=1
         self._update_used_letters(word,result_array)
+        
         if word==self.target_word:
             self.won=True
             self.game_over=True
             self.time_elapsed=(datetime.now()-self.start_time).total_seconds()
+            
         if self.attempts>=self.max_attempts:
             self.game_over=True
             self.time_elapsed=(datetime.now()-self.start_time).total_seconds()
-        r=HashMap()
-        r.set("success",True)
-        r.set("word",word)
-        r.set("result",result_array)
-        r.set("attempts",self.attempts)
-        r.set("max_attempts",self.max_attempts)
-        r.set("game_over",self.game_over)
-        r.set("won",self.won)
-        r.set("target_word",self.target_word if self.game_over else None)
-        r.set("time_elapsed",self.time_elapsed if self.game_over else None)
-        r.set("used_letters",self._used_letters_to_dict())
-        r.set("can_undo",not self.undo_stack.is_empty())
-        r.set("can_redo",not self.redo_stack.is_empty())
-        r.set("blind_mode",self.blind_mode)
-        return r
+            
+        # ========== THAY HASHMAP BẰNG DICT ==========
+        return {
+            "success": True,
+            "word": word,
+            "result": result_array,
+            "attempts": self.attempts,
+            "max_attempts": self.max_attempts,
+            "game_over": self.game_over,
+            "won": self.won,
+            "target_word": self.target_word if self.game_over else None,
+            "time_elapsed": self.time_elapsed if self.game_over else None,
+            "used_letters": self._used_letters_to_dict(),
+            "can_undo": not self.undo_stack.is_empty(),
+            "can_redo": not self.redo_stack.is_empty(),
+            "blind_mode": self.blind_mode
+        }
+        # ============================================
+        
     def _check_word(self,word):
         n=self.word_length
-        result=[0]*n  # Dùng list Python thay vì DynamicArray
-        target_arr=list(self.target_word)  # Chuyển string thành list
-        word_arr=list(word)  # Chuyển string thành list
+        result=[0]*n
+        target_arr=list(self.target_word)
+        word_arr=list(word)
         
         # Đánh dấu các vị trí đúng
         for i in range(n):
@@ -316,10 +353,14 @@ class WordleGame:
                         target_arr[j]=None
                         break
         return result
+        
     def _update_used_letters(self,word,result):
-        correct_list=self.used_letters.get("correct")
-        present_list=self.used_letters.get("present")
-        absent_list=self.used_letters.get("absent")
+        # ========== THAY HASHMAP BẰNG DICT ==========
+        correct_list=self.used_letters["correct"]
+        present_list=self.used_letters["present"]
+        absent_list=self.used_letters["absent"]
+        # ============================================
+        
         for i in range(self.word_length):
             letter=word[i]
             if result[i]==2:
@@ -333,86 +374,100 @@ class WordleGame:
             else:
                 if(not absent_list.contains(letter) and not correct_list.contains(letter) and not present_list.contains(letter)):
                     absent_list.append(letter)
+                    
     def undo(self):
         if self.undo_stack.is_empty():
-            r=HashMap()
-            r.set("success",False)
-            r.set("message","Không thể undo!")
-            return r
+            return {"success": False, "message": "Không thể undo!"}
+            
         if self.undo_count>=self.max_undo_redo:
-            r=HashMap()
-            r.set("success",False)
-            r.set("message",f"Đã hết lượt undo!(Tối đa{self.max_undo_redo}lần)")
-            return r
-        cur=HashMap()
-        cur.set("guesses_backup",self._clone_guesses())
-        cur.set("attempts",self.attempts)
-        cur.set("used_letters_backup",self._clone_used_letters())
+            return {"success": False, "message": f"Đã hết lượt undo!(Tối đa {self.max_undo_redo} lần)"}
+            
+        # ========== THAY HASHMAP BẰNG DICT ==========
+        cur={
+            "guesses_backup": self._clone_guesses(),
+            "attempts": self.attempts,
+            "used_letters_backup": self._clone_used_letters()
+        }
+        # ============================================
+        
         self.redo_stack.push(cur)
         prev=self.undo_stack.pop()
-        self.guesses=prev.get("guesses_backup")
-        self.attempts=prev.get("attempts")
-        self.used_letters=prev.get("used_letters_backup")
+        
+        # ========== THAY HASHMAP BẰNG DICT ==========
+        self.guesses=prev["guesses_backup"]
+        self.attempts=prev["attempts"]
+        self.used_letters=prev["used_letters_backup"]
+        # ============================================
+        
         self.game_over=False
         self.won=False
         self.undo_count+=1
-        r=HashMap()
-        r.set("success",True)
-        r.set("message",f"Đã hoàn tác({self.max_undo_redo-self.undo_count}lượt undo còn lại)")
-        r.set("attempts",self.attempts)
-        r.set("guesses",self._guesses_to_list())
-        r.set("used_letters",self._used_letters_to_dict())
-        r.set("can_undo",not self.undo_stack.is_empty() and self.undo_count<self.max_undo_redo)
         
-        r.set("can_redo",not self.redo_stack.is_empty() and self.redo_count<self.max_undo_redo)
-        r.set("undo_remaining",self.max_undo_redo-self.undo_count)
-        r.set("redo_remaining",self.max_undo_redo-self.redo_count)
-        r.set("cost",self.undo_cost)  # ← THÊM COST
-        return r
+        return {
+            "success": True,
+            "message": f"Đã hoàn tác({self.max_undo_redo-self.undo_count} lượt undo còn lại)",
+            "attempts": self.attempts,
+            "guesses": self._guesses_to_list(),
+            "used_letters": self._used_letters_to_dict(),
+            "can_undo": not self.undo_stack.is_empty() and self.undo_count<self.max_undo_redo,
+            "can_redo": not self.redo_stack.is_empty() and self.redo_count<self.max_undo_redo,
+            "undo_remaining": self.max_undo_redo-self.undo_count,
+            "redo_remaining": self.max_undo_redo-self.redo_count,
+            "cost": self.undo_cost
+        }
+        
     def redo(self):
         if self.redo_stack.is_empty():
-            r=HashMap()
-            r.set("success",False)
-            r.set("message","Không thể redo!")
-            return r
+            return {"success": False, "message": "Không thể redo!"}
+            
         if self.redo_count>=self.max_undo_redo:
-            r=HashMap()
-            r.set("success",False)
-            r.set("message",f"Đã hết lượt redo!(Tối đa{self.max_undo_redo}lần)")
-            return r
-        cur=HashMap()
-        cur.set("guesses_backup",self._clone_guesses())
-        cur.set("attempts",self.attempts)
-        cur.set("used_letters_backup",self._clone_used_letters())
+            return {"success": False, "message": f"Đã hết lượt redo!(Tối đa {self.max_undo_redo} lần)"}
+            
+        # ========== THAY HASHMAP BẰNG DICT ==========
+        cur={
+            "guesses_backup": self._clone_guesses(),
+            "attempts": self.attempts,
+            "used_letters_backup": self._clone_used_letters()
+        }
+        # ============================================
+        
         self.undo_stack.push(cur)
         nxt=self.redo_stack.pop()
-        self.guesses=nxt.get("guesses_backup")
-        self.attempts=nxt.get("attempts")
         
-        self.used_letters=nxt.get("used_letters_backup")
+        # ========== THAY HASHMAP BẰNG DICT ==========
+        self.guesses=nxt["guesses_backup"]
+        self.attempts=nxt["attempts"]
+        self.used_letters=nxt["used_letters_backup"]
+        # ============================================
+        
         self.redo_count+=1
+        
         if self.attempts>=self.max_attempts:
             self.game_over=True
+            
         if self.guesses.length()>0:
             last=self.guesses.get(self.guesses.length()-1)
-            if last.get("word")==self.target_word:
+            # ========== THAY HASHMAP BẰNG DICT ==========
+            if last["word"]==self.target_word:
                 self.won=True
                 self.game_over=True
-        r=HashMap()
-        r.set("success",True)
-        r.set("message",f"Đã làm lại!({self.max_undo_redo-self.redo_count}lượt redo còn lại)")
-        r.set("attempts",self.attempts)
-        r.set("guesses",self._guesses_to_list())
-        r.set("used_letters",self._used_letters_to_dict())
+            # ============================================
+                
+        return {
+            "success": True,
+            "message": f"Đã làm lại!({self.max_undo_redo-self.redo_count} lượt redo còn lại)",
+            "attempts": self.attempts,
+            "guesses": self._guesses_to_list(),
+            "used_letters": self._used_letters_to_dict(),
+            "game_over": self.game_over,
+            "won": self.won,
+            "can_undo": not self.undo_stack.is_empty() and self.undo_count<self.max_undo_redo,
+            "can_redo": not self.redo_stack.is_empty() and self.redo_count<self.max_undo_redo,
+            "undo_remaining": self.max_undo_redo-self.undo_count,
+            "redo_remaining": self.max_undo_redo-self.redo_count,
+            "cost": self.redo_cost
+        }
         
-        r.set("game_over",self.game_over)
-        r.set("won",self.won)
-        r.set("can_undo",not self.undo_stack.is_empty() and self.undo_count<self.max_undo_redo)
-        r.set("can_redo",not self.redo_stack.is_empty() and self.redo_count<self.max_undo_redo)
-        r.set("undo_remaining",self.max_undo_redo-self.undo_count)
-        r.set("redo_remaining",self.max_undo_redo-self.redo_count)
-        r.set("cost",self.redo_cost)  # ← THÊM COST
-        return r
     def _clone_guesses(self):
         new=LinkedList()
         cur=self.guesses.head
@@ -420,43 +475,67 @@ class WordleGame:
             new.append(cur.data)
             cur=cur.next
         return new
+        
     def _clone_used_letters(self):
-        new_map=HashMap()
-        for key in["correct","present","absent"]:
-            clone=LinkedList()
-            cur=self.used_letters.get(key).head
+        # ========== THAY HASHMAP BẰNG DICT ==========
+        new_map={
+            "correct": LinkedList(),
+            "present": LinkedList(),
+            "absent": LinkedList()
+        }
+        
+        for key in ["correct","present","absent"]:
+            cur=self.used_letters[key].head
             while cur:
-                clone.append(cur.data)
+                new_map[key].append(cur.data)
                 cur=cur.next
-            new_map.set(key,clone)
         return new_map
+        # ============================================
+        
     def _guesses_to_list(self):
         result=[]
         cur=self.guesses.head
         while cur:
-            result.append({"word":cur.data.get("word"),
-                           "result":cur.data.get("result"),
-                           "timestamp":cur.data.get("timestamp")})
+            # ========== THAY HASHMAP BẰNG DICT ==========
+            result.append({
+                "word": cur.data["word"],
+                "result": cur.data["result"],
+                "timestamp": cur.data["timestamp"]
+            })
+            # ============================================
             cur=cur.next
         return result
+        
     def _used_letters_to_dict(self):
-        return{"correct":self.used_letters.get("correct").to_array(),
-               "present":self.used_letters.get("present").to_array(),
-               "absent":self.used_letters.get("absent").to_array()}
+        # ========== THAY HASHMAP BẰNG DICT ==========
+        return {
+            "correct": self.used_letters["correct"].to_array(),
+            "present": self.used_letters["present"].to_array(),
+            "absent": self.used_letters["absent"].to_array()
+        }
+        # ============================================
 
     def get_state(self):
-        return{"mode":self.mode,
-               "max_attempts":self.max_attempts,
-               "target_word":self.target_word,
-               "word_length":self.word_length,"guesses":self._guesses_to_list(),
-               "attempts":self.attempts,"used_letters":self._used_letters_to_dict(),
-               "start_time":self.start_time.isoformat(),
-               "game_over":self.game_over,"won":self.won,
-               "time_elapsed":self.time_elapsed,
-               "undo_count":self.undo_count,
-                "hints_remaining":self.hints_remaining,
-                "blind_mode":self.blind_mode,
-               "redo_count":self.redo_count}
+        # ========== THAY HASHMAP BẰNG DICT ==========
+        return {
+            "mode": self.mode,
+            "max_attempts": self.max_attempts,
+            "target_word": self.target_word,
+            "word_length": self.word_length,
+            "guesses": self._guesses_to_list(),
+            "attempts": self.attempts,
+            "used_letters": self._used_letters_to_dict(),
+            "start_time": self.start_time.isoformat(),
+            "game_over": self.game_over,
+            "won": self.won,
+            "time_elapsed": self.time_elapsed,
+            "undo_count": self.undo_count,
+            "hints_remaining": self.hints_remaining,
+            "blind_mode": self.blind_mode,
+            "redo_count": self.redo_count
+        }
+        # ============================================
+        
     @classmethod
     def from_state(cls,state):
         game=cls.__new__(cls)
@@ -470,20 +549,30 @@ class WordleGame:
         game.won=state["won"]
         game.time_elapsed=state.get("time_elapsed",0)
         game.blind_mode=state.get("blind_mode",False)
+        
         game.guesses=LinkedList()
         for g in state["guesses"]:
-            gd=HashMap()
-            gd.set("word",g["word"])
-            # Chuyển result về list Python thay vì DynamicArray
-            gd.set("result",g["result"])
-            gd.set("timestamp",g["timestamp"])
-            game.guesses.append(gd)
-        game.used_letters=HashMap()
-        for key in["correct","present","absent"]:
-            ll=LinkedList()
+            # ========== THAY HASHMAP BẰNG DICT ==========
+            guess_data={
+                "word": g["word"],
+                "result": g["result"],
+                "timestamp": g["timestamp"]
+            }
+            # ============================================
+            game.guesses.append(guess_data)
+            
+        # ========== THAY HASHMAP BẰNG DICT ==========
+        game.used_letters={
+            "correct": LinkedList(),
+            "present": LinkedList(),
+            "absent": LinkedList()
+        }
+        
+        for key in ["correct","present","absent"]:
             for letter in state["used_letters"].get(key,[]):
-                ll.append(letter)
-            game.used_letters.set(key,ll)
+                game.used_letters[key].append(letter)
+        # ============================================
+        
         game.undo_stack=Stack()
         game.redo_stack=Stack()
         game.max_undo_redo=3
@@ -491,7 +580,10 @@ class WordleGame:
         game.redo_count=state.get("redo_count",0)
         game.hints_remaining=state.get("hints_remaining",3)
         game.hints_used=state.get("hints_used",[])
+        
         # Khởi tạo cost
         game.undo_cost = 3
         game.redo_cost = 3
+        game.hint_costs = {0: 2, 1: 2, 2: 2}
+        
         return game

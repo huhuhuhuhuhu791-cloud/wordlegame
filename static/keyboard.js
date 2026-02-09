@@ -1,11 +1,11 @@
-//Các hàm sử lý liên quan tới phím
-
-function handleKeyPress(key){//Xử lý nhập 
+//Các hàm sử lý liên quan tới phím và sự kiện như click.
+//Xử lý người dùng nhập một kí tự
+function handleKeyPress(key){
     if(!currentGame)
         return;
     if(currentRow>=currentGame.max_attempts)
         return;
-
+    //Chế độ chơi
     if(!isValidKey(key,currentGame.mode)){
         if(currentGame.mode==="math"){
             showMessage("Chỉ nhập số và +-*/=","error");
@@ -27,6 +27,7 @@ function handleBackspace(){
         return;
     if(currentCol<=0)
         return;
+    //Giảm current rol đi 1, cắt bỏ kí tự cuối
     currentCol--;
     currentWord=currentWord.slice(0,-1);
     updateCurrentRow();
@@ -41,8 +42,9 @@ function handleEnter(){
         showMessage("Cần "+currentGame.word_length+" ký tự!","error");
     }
 }
-//Xử lý khi gõ trên Keyboard
+//Hàm xử lý bỏ trên bàn phím ảo
 function toggleKeyboard(){
+    //Đảo trạng thái keyboard và xử lý ẩn hiện
     let alpha=document.getElementById("keyboard");
     let math=document.getElementById("mathKeyboard");
     let btn=document.getElementById("keyboardToggle");
@@ -60,15 +62,15 @@ function toggleKeyboard(){
         btn.textContent="Hiện";
     }
 }
-//Xử lý nhập từ
+//Xử lý nhập từ trên phím ảo
 function typeKey(letter){
     handleKeyPress(letter);
 }
-//xử lý xóa từ
+//xử lý xóa từ phím ảo
 function deleteKey(){
     handleBackspace();
 }
-//xửu lý cập nhật các màu cell
+//xửu lý cập nhật các màu cell trên phím ảo
 function updateKeyboardColors(usedLetters){
     if(!usedLetters)return;
     
@@ -104,7 +106,7 @@ function updateKeyboardColors(usedLetters){
     });
 }
 
-
+///Hàm xử lý sự kiện trong trang//
 
 // xử lý các phím kích chuột và Login--register
 document.addEventListener("DOMContentLoaded",()=>{
@@ -134,6 +136,7 @@ document.addEventListener("DOMContentLoaded",()=>{
         if(e.key==="Enter")
             register();
     });
+    //bắt sự kiện phím khi ở màn hình game(khi nhập bàn phím)
     document.addEventListener("keydown",e=>{
         let gameScreen=document.getElementById("gameScreen");
         if(!gameScreen)

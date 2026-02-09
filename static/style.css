@@ -3,6 +3,7 @@
     padding: 0;
     box-sizing: border-box;
 }
+
 /*Nền trang và trang giữa (phần body)*/
 body {
     font-family: 'Montserrat', sans-serif;
@@ -13,6 +14,7 @@ body {
     min-height: 100vh;
     padding: 10px;
 }
+
 .container {
     background: white;
     border-radius: 10px;
@@ -21,11 +23,13 @@ body {
     max-width: 500px;
     box-shadow: 0 5px 20px rgba(0,0,0,0.2);
 }
+
 h1, h2 {
     text-align: center;
     color: #667eea;
     margin-bottom: 20px;
 }
+
 .screen {
     display: none;
 }
@@ -33,9 +37,11 @@ h1, h2 {
 .screen.active {
     display: block;
 }
+
 .form-group {
     margin-bottom: 15px;
 }
+
 label {
     display: block;
     margin-bottom: 5px;
@@ -43,6 +49,7 @@ label {
     font-size: 14px;
     font-weight: 600;
 }
+
 input, select {
     width: 100%;
     padding: 10px;
@@ -50,10 +57,12 @@ input, select {
     border-radius: 5px;
     font-size: 14px;
 }
+
 input:focus, select:focus {
     outline: none;
     border-color: #667eea;
 }
+
 button {
     padding: 12px 20px;
     border: none;
@@ -66,6 +75,7 @@ button {
 button:hover {
     opacity: 0.9;
 }
+
 .btn-group {
     display: flex;
     gap: 10px;
@@ -101,6 +111,7 @@ button:hover {
     background: #fa709a;
     color: white;
 }
+
 .game-header {
     display: flex;
     justify-content: space-around;
@@ -133,7 +144,6 @@ button:hover {
     margin: 15px auto;
     width: fit-content;
 }
-
 .game-row {
     display: grid;
     gap: 5px;
@@ -161,6 +171,7 @@ button:hover {
     border-color: #667eea;
     border-width: 3px;
 }
+
 .cell-correct {
     background: #56ab2f !important;
     color: white !important;
@@ -178,6 +189,7 @@ button:hover {
     color: white !important;
     border-color: #b8c5ff !important;
 }
+
 .keyboard {
     background: #f0f4ff;
     padding: 10px;
@@ -215,6 +227,7 @@ button:hover {
 .key-wide {
     min-width: 60px;
 }
+
 .message {
     padding: 12px;
     border-radius: 5px;
@@ -237,6 +250,7 @@ button:hover {
     background: #e0f0ff;
     color: #0056b3;
 }
+
 .modal {
     display: none;
     position: fixed;
@@ -268,6 +282,7 @@ button:hover {
     padding-bottom: 10px;
     border-bottom: 2px solid #e3e8ff;
 }
+
 .btn-close {
     background: none;
     border: none;
@@ -319,55 +334,31 @@ table tr:hover {
 .hidden {
     display: none !important;
 }
-/* ========== COINS SYSTEM ========== */
-
 .coins-banner {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    padding: 15px 20px;
-    border-radius: 15px;
+    background: #f0f4ff;
+    padding: 12px 15px;
+    border-radius: 8px;
     margin: 15px 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
-}
-
-.coins-icon {
-    font-size: 32px;
-    animation: coinSpin 2s infinite;
+    text-align: center;
 }
 
 .coins-amount {
-    font-size: 36px;
+    font-size: 24px;
     font-weight: bold;
-    color: white;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    color: #667eea;
 }
 
 .coins-label {
     font-size: 14px;
-    color: white;
-    opacity: 0.9;
-}
-
-@keyframes coinSpin {
-    0%, 100% { transform: rotateY(0deg); }
-    50% { transform: rotateY(180deg); }
-}
-
-@keyframes coinBounce {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.2); }
+    color: #555;
 }
 
 /* Coins trong game header */
 #coinsDisplay {
-    color: #f5576c;
+    color: #667eea;
     font-weight: bold;
 }
 
-/* ================================== */
 @media (max-width: 480px) {
     .container {
         padding: 15px;

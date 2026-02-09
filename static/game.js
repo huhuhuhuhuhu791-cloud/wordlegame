@@ -1,62 +1,29 @@
 //các hàm sử lý khi chơi game
 
+//hiển thị màn hình khi cài đặt game mới
 function showNewGameOptions(){
     showScreen("newGameScreen");
-}//hiển thị màn hình 
-async function startNewGame(){//Bắt đầu một game nào đó
+}
+//Tạo game với cài đặt chọn
+async function startNewGame(){
+    //Lấy cài đặt từ form
     let mode=document.getElementById("gameMode").value;
     let maxAttempts=parseInt(document.getElementById("maxAttempts").value);
     let blindMode=document.getElementById("blindMode")?.checked || false;
-    
+    //Call api backend
     let res=await fetch("/api/new_game",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-            mode,
-            max_attempts:maxAttempts,
-            blind_mode:blindMode   
-        })
+        body:JSON.stringify({mode,max_attempts:maxAttempts,blind_mode:blindMode})
     });
 
     let data=await res.json();
-    
-    // ========== XỬ LÝ KHI BỊ BLOCK ==========
+
     if(data.blocked){
-        let message = data.message;
-        
-        // Nếu có reset_info, thêm countdown
-        if(data.reset_info){
-            let resetTime = new Date(data.reset_info.reset_time);
-            let now = new Date();
-            let diff = Math.floor((resetTime - now) / 1000);
-            
-            let hours = Math.floor(diff / 3600);
-            let minutes = Math.floor((diff % 3600) / 60);
-            let seconds = diff % 60;
-            
-            let timeStr = "";
-            if(hours > 0){
-                timeStr = `${hours} giờ ${minutes} phút`;
-            } else if(minutes > 0){
-                timeStr = `${minutes} phút ${seconds} giây`;
-            } else {
-                timeStr = `${seconds} giây`;
-            }
-            
-            if(data.reset_info.mode === "daily"){
-                message = `🚫 Đã hết lượt chơi hôm nay!\n⏰ Reset vào 00:00 (còn ${timeStr})`;
-            } else {
-                message = `🚫 Đã hết lượt chơi!\n⏰ Reset sau ${timeStr}`;
-            }
-        }
-        
-        showMessage(message, "error", 5000);
+        showMessage(data.message, "error", 5000);
         return;
     }
-    // ========================================
-    
-    if (data.word) window.t = data.word;
-    
+    //Reset các trạng thái
     currentGame={
         mode:data.mode,
         max_attempts:data.max_attempts,
@@ -71,8 +38,7 @@ async function startNewGame(){//Bắt đầu một game nào đó
     currentCol=0;
     currentWord="";
     elapsedSeconds=0;
-    
-    //bắt đầu hiển thị các phần lên
+    //Bắt đầu một game mới hiển thị lên hết
     initGameBoard();
     updateGameHeader();
     switchKeyboard(currentGame.mode);
@@ -81,11 +47,8 @@ async function startNewGame(){//Bắt đầu một game nào đó
     updateTimeDisplay();
     startTimer();
     updateHintsDisplay(3);
-    
-    // Hiển thị blind mode indicator
     updateBlindModeDisplay(data.blind_mode);   
     
-    //Hiển thị các nút lên
     document.getElementById("hintBtn").disabled=false;
     document.getElementById("hintBtn").textContent="Gợi ý";
     document.getElementById("undoBtn").disabled=true;
@@ -97,19 +60,19 @@ async function startNewGame(){//Bắt đầu một game nào đó
         },500);
     }
     
-    // Thông báo blind mode
     if(data.blind_mode){
         setTimeout(()=>{
-            showMessage("🙈 CHẾ ĐỘ ĐOÁN MÙ - Không thấy màu sắc!","warning",4000);
+            showMessage("CHẾ ĐỘ ĐOÁN MÙ - Không thấy màu sắc!","warning",4000);
         },1000);
     }
 }
 
-//khi bấm vào setting để chơi
+//Tải cài đặt người dùng
 async function loadSettings(){
+    //Call API
     let res=await fetch("/api/get_settings");
     let settings=await res.json();
-    //thay đổi các giá trị hiển thị html
+    //Cập nhật các control trên form
     document.getElementById("unlimitedPlay").checked=settings.unlimited;
     document.getElementById("maxPlays").value=settings.max_plays;
     document.getElementById("resetMode").value=settings.reset_mode;
@@ -117,42 +80,41 @@ async function loadSettings(){
     toggleUnlimited();
     toggleResetOptions();
 }
-//Khi bậc chơi không giới hạn
+//Xử lý khi bấm vào chơi vô hạn
 function toggleUnlimited(){
     let unlimited=document.getElementById("unlimitedPlay").checked;
     document.getElementById("limitSettings").style.display=unlimited?"none":"block";
 }
-//Khi bật nút có reset
-function toggleResetOptions(){
-    let mode=document.getElementById("resetMode").value;
-    document.getElementById("intervalSetting").style.display=mode==="interval"?"block":"none";
-}
-//Lưu setting và gửi về backend
+//Lưu cài đặc người dùng
 async function saveSettings(){
+    //Lấy thông tin từ form
     let settings={
         unlimited:document.getElementById("unlimitedPlay").checked,
-        max_plays:parseInt(document.getElementById("maxPlays").value),
-        reset_mode:document.getElementById("resetMode").value,
-        reset_interval:parseInt(document.getElementById("resetInterval").value)
+        max_plays:parseInt(document.getElementById("maxPlays").value)
     };
-    let res=await fetch("/api/update_settings",{method:"POST",
+    //call API
+    let res=await fetch("/api/update_settings",{
+        method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify(settings)
     });
+    //Hiển thị và quay về menu
     let data=await res.json();
     if(data.success){
         showMessage("Đã lưu!","success");
         showScreen("menuScreen");
     }
 }
+//---Hàm quản Lý trò chơi khi đang chơi//
 //Xử lý resumeGame
 async function resumeGame(){
+    //Call API lấy trạng thái game trước đó
     let res=await fetch("/api/resume_game",{
         method:"POST",
         headers:{"Content-Type":"application/json"}
     });
     let data=await res.json();
-    //Xử lý True
+    //Khôi phục current game từ server
     if(data.success){
         let state=data.state;
         currentGame={mode:state.mode,max_attempts:state.max_attempts, word_length:state.word_length,
@@ -166,7 +128,7 @@ async function resumeGame(){
         currentCol=0;
         currentWord="";
         elapsedSeconds=state.elapsed_seconds;
-        //Cập nhật
+        //Cập nhật các trạng thái trước đó
         initGameBoard();
         state.guesses.forEach((g,i)=>displayGuess(i,g.word,g.result));
         updateBlindModeDisplay(currentGame.blind_mode);
@@ -200,27 +162,52 @@ async function backToMenu(){
     if(currentGame&&currentRow<currentGame.max_attempts){
         let wantSave=confirm("Lưu game?");//Nếu bấm lưu game
         if(wantSave){
+            //GỌi API quit game lưu trạng thái chơi
             await fetch("/api/quit_game",{
                 method:"POST",
                 headers:{"Content-Type":"application/json"},
                 body:JSON.stringify({elapsed_seconds:elapsedSeconds})
             });
+            //Hiển thị nút tiếp tục 
             if(resumeBtn)resumeBtn.style.display="block";
         
         }
-        //Bỏ qua lưu
+        //Bỏ qua gọi API discard_game vừa rồi
         else{
             await fetch("/api/discard_game",{method:"POST"});
             if(resumeBtn)resumeBtn.style.display="none";
         }
     }
+    //CHuyển về menu
     showScreen("menuScreen");
+}
+//Các hàm xử lý đổi bàn phím
+function switchKeyboard(mode){
+    let alpha=document.getElementById("keyboard");
+    let math=document.getElementById("mathKeyboard");
+    if(mode==="math"){
+        if(alpha)alpha.style.display="none";
+        if(math)math.style.display="block";
+    }else{
+        if(alpha)alpha.style.display="block";
+        if(math)math.style.display="none";
+    }
+}
+async function updateCoins(){
+    let res=await fetch("/api/get_coins");
+    let data=await res.json();
+    if(data.success){
+        userCoins=data.coins;
+        let display=document.getElementById("coinsDisplay");
+        if(display){
+            display.textContent=userCoins;
+        }
+    }
 }
 function updateBlindModeDisplay(isBlind){
     let indicator=document.getElementById("blindIndicator");
     if(indicator){
         if(isBlind){
-            indicator.textContent="🙈";
             indicator.style.display="block";
             indicator.title="Chế độ đoán mù";
         }else{
@@ -228,7 +215,8 @@ function updateBlindModeDisplay(isBlind){
         }
     }
 }
-//Bảng trò chơi
+//Hàm quản lý giao diện game///
+//Bảng trò chơi, tạo bảng game với kích thước phù hợp dựa trên tính toán
 function initGameBoard(){
     let board=document.getElementById("gameBoard");
     if(!board||!currentGame)
@@ -264,7 +252,7 @@ function initGameBoard(){
     //Xử lý xong thì cập nhật các cái cell
     updateActiveCells();
 }
-//Cập nhật cell
+//Đánh dấu ô đang được nhập liệu(thêm active vào từng ô mình đang nhập)
 function updateActiveCells(){
     document.querySelectorAll(".game-cell").forEach(c=>c.classList.remove("active"));
     if(!currentGame)
@@ -278,6 +266,7 @@ function updateActiveCells(){
 function updateCurrentRow(){
     if(!currentGame)
         return;
+    //Duyệt qua các ô trong hàng hiện tại,hiển thị từ
     for(let i=0;i<currentGame.word_length;i++){
         let cell=document.getElementById("cell-"+currentRow+"-"+i);
         if(!cell)continue;
@@ -291,7 +280,7 @@ function updateCurrentRow(){
     }
     updateActiveCells();
 }
-//Hiển thị dự đoán của ta
+//Hiển thị kết qả một lần dự đoán
 function displayGuess(rowIndex,word,result){
     if(!word||!result)
         return;
@@ -306,7 +295,7 @@ function displayGuess(rowIndex,word,result){
         cell.classList.remove("active","cell-correct","cell-present","cell-absent");
         
         // CHỈ HIỆN MÀU KHI KHÔNG Ở BLIND MODE HOẶC GAME ĐÃ KẾT THÚC
-        if(!currentGame.blind_mode || currentGame.game_over){  // <-- THÊM ĐIỀU KIỆN
+        if(!currentGame.blind_mode || currentGame.game_over){
             if(result[i]===2){
                 cell.classList.add("cell-correct");
             }else if(result[i]===1){
@@ -322,6 +311,7 @@ function displayGuess(rowIndex,word,result){
 }
 //Cập nhật các phần header
 function updateGameHeader(){
+    //Cập nhật số lượt đã dùng,...
     if(!currentGame)return;
     let player=document.getElementById("currentPlayer");
     let attempts=document.getElementById("attemptsDisplay");
@@ -333,24 +323,22 @@ function updateGameHeader(){
     if(currentGame.mode==="math")icon="🔢";
     if(mode)mode.textContent=icon;
 }
-//xử lý khi lấy Hint
+//Yêu cầu gợi ý từ hệ thống
 async function getHint(){
     if(!currentGame){
         showMessage("Không có game!","error");
         return;
     }
-    
-    // ========== CHECK COST ==========
+    //Kiểm tra cost
     let hintNumber = currentGame.hints_used ? currentGame.hints_used.length : 0;
-    let costs = [2, 3, 4, 5, 8, 12];  // TẤT CẢ HINT ĐỀU TỐN COINS
+    let costs = [2,2,2];  // TẤT CẢ HINT ĐỀU TỐN COINS
     let cost = costs[hintNumber] || 0;
     
     let confirmMsg = `Dùng hint? (${cost} coins)`;
     
     if(!confirm(confirmMsg))
         return;
-    // ================================
-    
+
     let res=await fetch("/api/get_hint",{
         method:"POST",
         headers:{"Content-Type":"application/json"}
@@ -358,19 +346,14 @@ async function getHint(){
     let data=await res.json();
     
     if(data.success){
-        showMessage(data.hint_text,"info",5000);
+        showMessage(data.hint_text,"info",10000);
         updateHintsDisplay(data.hints_remaining);
         
-        // ========== CẬP NHẬT COINS ==========
+        // cập nhật coin
         if(data.user_coins !== undefined){
             userCoins = data.user_coins;
             updateCoinsDisplay(userCoins);
         }
-        
-        // Luôn hiển thị message trừ coins (vì tất cả hint đều tốn)
-        showMessage(`✅ Đã dùng ${data.cost} coins!`,"success",2000);
-        // ====================================
-        
         if(data.hints_remaining<=0){
             document.getElementById("hintBtn").disabled=true;
             document.getElementById("hintBtn").textContent="Hết";
@@ -387,21 +370,23 @@ function updateHintsDisplay(remaining){
         display.style.color="#dc3545";
     }
 }
-//Xử lý khi bấm submit(enter)
+//Xử lý khi người chơi gửi từ đã đoán
 async function submitGuess(){
     if(!currentGame)
         return;
+    //Kiểm tra độ dài từ
     if(currentWord.length!==currentGame.word_length){
         showMessage("Cần "+currentGame.word_length+" ký tự!","error");
         return;
     }
-    //Gửi về backend
+    //Gửi về API 
     let res=await fetch("/api/guess",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({word:currentWord,elapsed_seconds:elapsedSeconds})
     });
     let data=await res.json();
+    //Thành công
     if(data.success){
         displayGuess(currentRow,data.word,data.result);
         currentGame.attempts=data.attempts;
@@ -416,51 +401,50 @@ async function submitGuess(){
         updateActiveCells();
         document.getElementById("undoBtn").disabled=!data.can_undo;
         document.getElementById("redoBtn").disabled=!data.can_redo;
+        //Nếu game kết thúc
         if(data.game_over){
             stopTimer();
             
             if(data.won){
-                let msg = `🎉 Thắng trong ${data.time_elapsed.toFixed(2)}s`;
+                let msg = ` Thắng trong ${data.time_elapsed.toFixed(2)}s`;
                 
-                // ========== HIỂN THỊ COINS ==========
                 if(data.coins_earned > 0){
-                    msg += `\n💰 +${data.coins_earned} coins!`;
+                    msg += `\n +${data.coins_earned} coins!`;
                 }
                 if(data.user_coins !== undefined){
                     userCoins = data.user_coins;
                     updateCoinsDisplay(userCoins);
                 }
-                // ====================================
                 
                 showMessage(msg,"success");
             }else{
-                showMessage("😢 Thua! Đáp án: "+data.target_word,"error");
+                showMessage("Thua! Đáp án: "+data.target_word,"error");
             }
             
             setTimeout(()=>{
                 showScreen("menuScreen");
-            },3000);
+            },10000);
         }
     }else{
         showMessage(data.message,"error");
     }
 }
-
-// ========== UNDO VỚI COINS ==========
+//Xử lý undo
 async function undoGuess(){
     // Confirm trước khi undo
     const UNDO_COST = 3;
     if(!confirm(`Hoàn tác lượt đoán? (Tốn ${UNDO_COST} coins)`)){
         return;
     }
-    
+    //GỌi API undo
     let res=await fetch("/api/undo",{
         method:"POST",
         headers:{"Content-Type":"application/json"}
     });
     let data=await res.json();
-    
+     
     if(data.success){
+        //Khôi phục trang thái game trước đó
         if(!currentGame)currentGame={};
         currentGame.attempts=data.attempts;
         currentGame.guesses=data.guesses;
@@ -475,20 +459,18 @@ async function undoGuess(){
         updateActiveCells();
         document.getElementById("undoBtn").disabled=!data.can_undo;
         document.getElementById("redoBtn").disabled=!data.can_redo;
-        
-        // ========== CẬP NHẬT COINS ==========
         if(data.user_coins !== undefined){
             userCoins = data.user_coins;
             updateCoinsDisplay(userCoins);
         }
-        showMessage(`✅ Hoàn tác! (-${data.cost} coins)`,"info");
+        showMessage(`Hoàn tác! (-${data.cost} coins)`,"info");
         // ====================================
     }else{
         showMessage(data.message,"error");
     }
 }
 
-// ========== REDO VỚI COINS ==========
+// xử lý redo tương tự undo
 async function redoGuess(){
     // Confirm trước khi redo
     const REDO_COST = 3;
@@ -517,27 +499,25 @@ async function redoGuess(){
         updateActiveCells();
         document.getElementById("undoBtn").disabled=!data.can_undo;
         document.getElementById("redoBtn").disabled=!data.can_redo;
-        
-        // ========== CẬP NHẬT COINS ==========
         if(data.user_coins !== undefined){
             userCoins = data.user_coins;
             updateCoinsDisplay(userCoins);
         }
-        showMessage(`✅ Làm lại! (-${data.cost} coins)`,"info");
-        // ====================================
+        showMessage(` Làm lại! (-${data.cost} coins)`,"info");
     }else{
         showMessage(data.message,"error");
     }
 }
-// ====================================
 
-//Hiển thị các cái bảng xếp hạng
+
+//Tải và hiển thị bản xếp hạng
 async function loadLeaderboard(){
     let res=await fetch("/api/leaderboard");
     let data=await res.json();
     if(data.success){
         let list=document.getElementById("leaderboardList");
         if(!list)return;
+        //Xử lý với modal với bảng
         if(!data.leaderboard||data.leaderboard.length===0){
             list.innerHTML='<p style="text-align:center;padding:20px;">Chưa có ai</p>';
         }else{
@@ -559,7 +539,7 @@ async function loadLeaderboard(){
         showMessage(data.message,"error");
     }
 }
-//Cập nhật lịch sử
+//Tải lịch sử người dùng
 async function loadHistory(){
     let res=await fetch("/api/history");
     let data=await res.json();

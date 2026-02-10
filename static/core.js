@@ -99,7 +99,7 @@ async function login(){
         currentUser=data.username;
         document.getElementById("playerName").textContent=currentUser;
         let resumeBtn=document.getElementById("resumeBtn");
-
+        await updateCoins();
         if(resumeBtn)resumeBtn.style.display=data.has_saved_game?"block":"none";
 
         showScreen("menuScreen");
@@ -135,6 +135,7 @@ async function register(){
         document.getElementById("resumeBtn").style.display="none";
         showScreen("menuScreen");
         showMessage(data.message,"success");
+        await updateCoins();
     }else{
         showMessage(data.message,"error");
     }

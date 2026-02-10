@@ -6,19 +6,17 @@ from file_handler import FileHandler
 from user_manager import UserManager
 from data_structures import LinkedList
 from file_handler import Account
-
 app=Flask(__name__)
 app.secret_key=os.environ.get("SECRET_KEY","cr7-ronaldo")
 file_handler=FileHandler()
 user_manager=UserManager()
 active_games={}
 game_settings={"unlimited":True,"max_plays":3}
-
-
 @app.route("/")
 def index():
     return render_template("index.html")
-
+#___CÁC API endpoints cần thiết cho Game Wordle__#
+#Đăng nhập
 @app.route("/api/login",methods=["POST"])
 def login():
     data=request.get_json()
@@ -33,10 +31,8 @@ def login():
             found=current.data
             break
         current=current.next
-    
     if not found:
         return jsonify({"success":False,"message":"Tài khoản không tồn tại!"})
-    
     if not found.check_password(password):
         return jsonify({"success":False,"message":"Sai mật khẩu!"})
     
@@ -45,65 +41,47 @@ def login():
     session["username"]=username
     has_saved=file_handler.has_saved_game(username)
     user_manager.add_or_get_user(username)
-    
-    return jsonify({
-        "success":True,
-        "username":username,
-        "has_saved_game":has_saved,
-        "message":"Đăng nhập thành công!"
-    })
-
+    return jsonify({"success":True,"username":username,"has_saved_game":has_saved,"message":"Đăng nhập thành công!"})
+#Đăng Ký
 @app.route("/api/register",methods=["POST"])
 def register():
     data=request.get_json()
     username=data.get("username","")
     password=data.get("password","")
-    
     if not username or not password:
         return jsonify({"success":False,"message":"Vui lòng nhập đủ thông tin!"})
     if len(password)<6:
         return jsonify({"success":False,"message":"Mật khẩu phải có ít nhất 6 ký tự!"})
-    
     accounts=file_handler.load_accounts()
     current=accounts.head
+    
     while current:
         if current.data.username==username:
             return jsonify({"success":False,"message":"Tên đăng nhập đã tồn tại!"})
         current=current.next
-    
-    if accounts.length()>=5:
-        return jsonify({"success":False,"message":"Đã đạt giới hạn 5 tài khoản!"})
-    
     new_account=Account(username,password)
     accounts.append(new_account)
     file_handler.save_accounts(accounts)
     user_manager.add_or_get_user(username)
     session["username"]=username
-    
     return jsonify({"success":True,"username":username,"message":"Đăng ký thành công!"})
-
+#Đăng xuất
 @app.route("/api/logout",methods=["POST"])
 def logout():
     session.pop("username",None)
     return jsonify({"success":True,"message":"Đã đăng xuất!"})
-
+#Tạo game mới
 @app.route("/api/new_game",methods=["POST"])
 def new_game():
     username=session.get("username")
     if not username:
         return jsonify({"success":False,"message":"Chưa đăng nhập!"})
-    
     data=request.get_json()
     mode=data.get("mode","english")
     max_attempts=int(data.get("max_attempts",6))
     blind_mode=data.get("blind_mode",False)
-
-    can_play,message,remaining=user_manager.can_play(
-        username,
-        unlimited=game_settings["unlimited"],
-        max_plays=game_settings["max_plays"]
-    )
     
+    can_play,message,remaining=user_manager.can_play(username,unlimited=game_settings["unlimited"],max_plays=game_settings["max_plays"])
     if not can_play:
         return jsonify({"success":False,"message":message,"blocked":True})
     game=WordleGame(mode=mode,max_attempts=max_attempts,blind_mode=blind_mode)
@@ -112,66 +90,37 @@ def new_game():
     
     # Ghi nhận đã chơi 1 lượt
     user_manager.record_play(username)
-    
-    return jsonify({
-        "success":True,
-        "mode":mode,
-        "max_attempts":max_attempts,
-        "blind_mode":blind_mode,
-        "word_length":game.word_length,
-        "attempts":0,
-        "remaining_plays":remaining
-    })
-
+    return jsonify({"success":True,"mode":mode,"max_attempts":max_attempts,"blind_mode":blind_mode,"word_length":game.word_length,"attempts":0,"remaining_plays":remaining})
+#Đoán từ/Biểu thức
 @app.route("/api/guess",methods=["POST"])
 def make_guess():
     username=session.get("username")
     if not username:
         return jsonify({"success":False,"message":"Chưa đăng nhập!"})
-    
     game=active_games.get(username)
     if not game:
         return jsonify({"success":False,"message":"Không có game nào đang chơi!"})
-    
     data=request.get_json()
-    word=data.get("word","").strip().upper()
     
+    word=data.get("word","").strip().upper()
     if not word:
         return jsonify({"success":False,"message":"Vui lòng nhập từ!"})
     if not game.is_valid_word(word):
         return jsonify({"success":False,"message":"Từ không hợp lệ!"})
-    
     result=game.make_guess(word)
-    
-    response={
-        "success":result.get("success",False),
-        "word":word,
-        "result":result.get("result",[]),
-        "attempts":result.get("attempts",0),
-        "max_attempts":result.get("max_attempts",6),
-        "game_over":result.get("game_over",False),
-        "won":result.get("won",False),
-        "used_letters":result.get("used_letters",{"correct":[],"present":[],"absent":[]}),
-        "can_undo":result.get("can_undo",False),
-        "can_redo":result.get("can_redo",False),
-        "message":result.get("message","")
-    }
-    
+    response={"success":result.get("success",False),"word":word,"result":result.get("result",[]),
+            "attempts":result.get("attempts",0),"max_attempts":result.get("max_attempts",6),
+            "game_over":result.get("game_over",False),"won":result.get("won",False),
+            "used_letters":result.get("used_letters",{"correct":[],"present":[],"absent":[]}),
+            "can_undo":result.get("can_undo",False),"can_redo":result.get("can_redo",False),
+            "message":result.get("message","")}
     if result.get("game_over"):
         response["target_word"]=result.get("target_word")
         response["time_elapsed"]=result.get("time_elapsed",0)
-        
-        coins_earned = user_manager.add_game_result(
-            username=username,
-            time_elapsed=result.get("time_elapsed",0),
-            attempts=result.get("attempts",0),
-            won=result.get("won",False),
-            mode=game.mode
-        )
-
+        coins_earned = user_manager.add_game_result(username=username,time_elapsed=result.get("time_elapsed",0),
+                                                    attempts=result.get("attempts",0),won=result.get("won",False),mode=game.mode)
         response["coins_earned"] = coins_earned
         response["user_coins"] = user_manager.get_coins(username)
-        
         if username in active_games:
             del active_games[username]
         file_handler.delete_game_state(username)
@@ -181,21 +130,19 @@ def make_guess():
         state=game.get_state()
         state["elapsed_seconds"]=elapsed_seconds
         file_handler.save_game_state(username,state)
-    
     return jsonify(response)
-
+#Xóa game vừa chơi (bấm cancel)
 @app.route("/api/discard_game",methods=["POST"])
 def discard_game():
     username=session.get("username")
     if not username:
         return jsonify({"success":False,"message":"Chưa đăng nhập!"})
-    
     if username in active_games:
         del active_games[username]
     file_handler.delete_game_state(username)
     
     return jsonify({"success":True,"message":"Đã hủy và không lưu game!"})
-
+#Xử lý undo
 @app.route("/api/undo",methods=["POST"])
 def undo():
     username=session.get("username")
@@ -205,40 +152,23 @@ def undo():
     game=active_games.get(username)
     if not game:
         return jsonify({"success":False,"message":"Không có game nào đang chơi!"})
-    
     # Check coins
     cost = game.undo_cost
     user_coins = user_manager.get_coins(username)
-    
     if user_coins < cost:
-        return jsonify({
-            "success": False,
-            "message": f"Không đủ coins! Cần {cost} coins, bạn có {user_coins}",
-            "cost": cost,
-            "user_coins": user_coins
-        })
-    
+        return jsonify({"success": False,"message": f"Không đủ coins! Cần {cost} coins, bạn có {user_coins}",
+                        "cost": cost,"user_coins": user_coins})
     result=game.undo()
-    
     if result.get("success",False):
         user_manager.spend_coins(username, cost)
         file_handler.save_game_state(username,game.get_state())
         current_coins = user_manager.get_coins(username)
-        
-        return jsonify({
-            "success": True,
-            "message": result.get("message",""),
-            "attempts": result.get("attempts",0),
-            "guesses": result.get("guesses",[]),
-            "used_letters": result.get("used_letters",{"correct":[],"present":[],"absent":[]}),
-            "can_undo": result.get("can_undo",False),
-            "can_redo": result.get("can_redo",False),
-            "cost": cost,
-            "user_coins": current_coins
-        })
+        return jsonify({"success": True,"message": result.get("message",""),"attempts": result.get("attempts",0),
+                        "guesses": result.get("guesses",[]),"used_letters": result.get("used_letters",{"correct":[],"present":[],"absent":[]}),
+                        "can_undo": result.get("can_undo",False),"can_redo": result.get("can_redo",False),"cost": cost,"user_coins": current_coins})
     else:
         return jsonify({"success": False,"message": result.get("message",""),"cost": cost})
-
+#xử Lý redo
 @app.route("/api/redo",methods=["POST"])
 def redo():
     username=session.get("username")
@@ -254,36 +184,22 @@ def redo():
     user_coins = user_manager.get_coins(username)
     
     if user_coins < cost:
-        return jsonify({
-            "success": False,
-            "message": f"Không đủ coins! Cần {cost} coins, bạn có {user_coins}",
-            "cost": cost,
-            "user_coins": user_coins
-        })
-    
+        return jsonify({"success": False, "message": f"Không đủ coins! Cần {cost} coins, bạn có {user_coins}",
+                        "cost": cost,"user_coins": user_coins})
     result=game.redo()
-    
+
     if result.get("success",False):
         user_manager.spend_coins(username, cost)
         file_handler.save_game_state(username,game.get_state())
         current_coins = user_manager.get_coins(username)
         
-        return jsonify({
-            "success": True,
-            "message": result.get("message",""),
-            "attempts": result.get("attempts",0),
-            "guesses": result.get("guesses",[]),
-            "used_letters": result.get("used_letters",{"correct":[],"present":[],"absent":[]}),
-            "game_over": result.get("game_over",False),
-            "won": result.get("won",False),
-            "can_undo": result.get("can_undo",False),
-            "can_redo": result.get("can_redo",False),
-            "cost": cost,
-            "user_coins": current_coins
-        })
+        return jsonify({"success": True,"message": result.get("message",""),"attempts": result.get("attempts",0),
+                        "guesses": result.get("guesses",[]),"used_letters": result.get("used_letters",{"correct":[],"present":[],"absent":[]}),
+                        "game_over": result.get("game_over",False),"won": result.get("won",False),"can_undo": result.get("can_undo",False),
+                        "can_redo": result.get("can_redo",False),"cost": cost,"user_coins": current_coins})
     else:
         return jsonify({"success": False,"message": result.get("message",""),"cost": cost})
-
+#Xử lý chế độ resumeGame
 @app.route("/api/resume_game",methods=["POST"])
 def resume_game():
     username=session.get("username")
@@ -298,49 +214,36 @@ def resume_game():
     active_games[username]=game
     
     return jsonify({"success":True,"state":state})
-
+#Lấy tất cả các hint
 @app.route("/api/get_hint",methods=["POST"])
 def get_hint():
     username=session.get("username")
     if not username:
         return jsonify({"success":False,"message":"Chưa đăng nhập!"})
-    
     game=active_games.get(username)
     if not game:
         return jsonify({"success":False,"message":"Không có game đang chơi!"})
-    
     # Check cost
     hint_number = len(game.hints_used)
     cost = game.hint_costs.get(hint_number, 0)
     user_coins = user_manager.get_coins(username)
-    
     if user_coins < cost:
-        return jsonify({
-            "success": False,
-            "message": f"Không đủ coins! Cần {cost} coins, bạn có {user_coins}",
-            "cost": cost,
-            "user_coins": user_coins
-        })
-    
+        return jsonify({"success": False,"message": f"Không đủ coins! Cần {cost} coins, bạn có {user_coins}","cost": cost,"user_coins": user_coins})
     result=game.get_hint()
-    
     if result["success"]:
         user_manager.spend_coins(username, cost)
         state=game.get_state()
         file_handler.save_game_state(username,state)
-        
         current_coins = user_manager.get_coins(username)
         result["user_coins"] = current_coins
         result["cost"] = cost
-    
     return jsonify(result)
-
+#Xử lý API quit game
 @app.route("/api/quit_game",methods=["POST"])
 def quit_game():
     username=session.get("username")
     if not username:
         return jsonify({"success":False,"message":"Chưa đăng nhập!"})
-    
     game=active_games.get(username)
     if game and not game.game_over:
         data=request.get_json(silent=True)or{}
@@ -348,25 +251,21 @@ def quit_game():
         state=game.get_state()
         state["elapsed_seconds"]=elapsed_seconds
         file_handler.save_game_state(username,state)
-    
     if username in active_games:
         del active_games[username]
     
     return jsonify({"success":True,"message":"Đã thoát game!"})
-
-# ========== SETTINGS - ĐƠN GIẢN HÓA ==========
 @app.route("/api/update_settings",methods=["POST"])
 def update_settings():
     global game_settings
     data=request.json
-    # Chỉ nhận 2 keys
     if "unlimited" in data:
         game_settings["unlimited"] = data["unlimited"]
     if "max_plays" in data:
         game_settings["max_plays"] = data["max_plays"]
     
     return jsonify({"success":True,"settings":game_settings})
-
+#Lấy setting
 @app.route("/api/get_settings",methods=["GET"])
 def get_settings():
     return jsonify(game_settings)
@@ -385,15 +284,14 @@ def get_history():
     if not history:
         history=[]
     return jsonify({"success":True,"history":history})
+#lấy coin
 @app.route("/api/get_coins",methods=["GET"])
 def get_coins():
     username=session.get("username")
     if not username:
         return jsonify({"success":False,"message":"Chưa đăng nhập!"})
-    
     coins = user_manager.get_coins(username)
     return jsonify({"success":True,"coins":coins})
-
 if __name__=="__main__":
     os.makedirs("data/game_states",exist_ok=True)
     if not os.path.exists("data/accounts.dat"):
